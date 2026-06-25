@@ -285,7 +285,7 @@ dart run build_runner build --delete-conflicting-outputs
 sudo apt-get install cmake ninja-build clang libgtk-3-dev libsqlite3-dev
 ```
 
-## 🤝 Testing with a Buddy
+## Testing
 
 To test AtNav across two different computers, follow these steps:
 
