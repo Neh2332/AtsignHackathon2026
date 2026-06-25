@@ -2,9 +2,6 @@
 
 **Decentralized, End-to-End Encrypted Desktop Location Sharing on the Atsign Protocol**
 
-> Zero centralized database. Zero middleman. Peer-to-peer encrypted coordinates.
-> Your location data belongs to you — not a corporate server.
-
 ---
 
 ## The Problem
@@ -302,11 +299,6 @@ To test AtNav across two different computers, follow these steps:
 
 Built for the **Atsign Hackathon** (June 25-26, 2026) to demonstrate the Atsign Protocol's capability for real-time, decentralized, end-to-end encrypted data sharing — proving that location privacy doesn't require trusting a central authority.
 
----
-
-## License
-
-BSD-3-Clause — See [LICENSE](LICENSE) for details.
 
 ---
 
