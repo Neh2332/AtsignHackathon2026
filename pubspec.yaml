@@ -1,0 +1,55 @@
+name: atnav
+description: "Decentralized E2E Encrypted Desktop Location Sharing on the Atsign Protocol"
+publish_to: 'none'
+version: 1.0.0+1
+
+environment:
+  sdk: ^3.7.2
+
+dependencies:
+  flutter:
+    sdk: flutter
+
+  # ── Atsign Protocol SDK ────────────────────────────────────────────────────
+  at_client: ^3.12.0
+  at_commons: ^5.9.0
+  at_utils: ^3.2.0
+  at_auth: ^3.0.0
+
+  # ── Map Rendering ─────────────────────────────────────────────────────────
+  flutter_map: ^7.0.2
+  latlong2: ^0.9.1
+
+  # ── Local Storage (SQLite via Drift) ───────────────────────────────────────
+  drift: ^2.22.1
+  sqlite3_flutter_libs: ^0.5.28
+
+  # ── Location Services ─────────────────────────────────────────────────────
+  geolocator: ^13.0.2
+
+  # ── File System & Platform ─────────────────────────────────────────────────
+  path_provider: ^2.1.5
+  path: ^1.9.0
+  file_picker: ^11.0.2
+
+  # ── State Management ──────────────────────────────────────────────────────
+  provider: ^6.1.2
+
+  # ── Typography ─────────────────────────────────────────────────────────────
+  google_fonts: ^6.2.1
+
+  # ── Desktop Window Management ──────────────────────────────────────────────
+  window_manager: ^0.4.3
+
+  # ── Utilities ──────────────────────────────────────────────────────────────
+  intl: ^0.19.0
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^5.0.0
+  drift_dev: ^2.22.1
+  build_runner: ^2.4.14
+
+flutter:
+  uses-material-design: true
