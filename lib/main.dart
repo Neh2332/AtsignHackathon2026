@@ -1,21 +1,26 @@
 import 'dart:ui';
 
 import 'package:flutter/material.dart';
-import 'package:window_manager/window_manager.dart';
+import 'package:flutter/services.dart';
 
-import 'core/constants.dart';
 import 'features/ui/map_screen.dart';
 import 'features/ui/onboarding_screen.dart';
 import 'features/ui/theme.dart';
 
-/// AtNav — Decentralized E2E Encrypted Desktop Location Sharing
+/// AtNav — Decentralized E2E Encrypted Location Sharing
 ///
 /// Root entrypoint bootstrapping the application context:
-/// - Configures desktop window (title, size, minimum constraints)
 /// - Sets global error/exception handlers
+/// - Locks orientation to portrait on mobile
 /// - Routes between OnboardingScreen and MapScreen based on auth state
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+
+  // ── Lock to portrait on mobile ─────────────────────────────────────────────
+  await SystemChrome.setPreferredOrientations([
+    DeviceOrientation.portraitUp,
+    DeviceOrientation.portraitDown,
+  ]);
 
   // ── Global Error Handling ──────────────────────────────────────────────────
   FlutterError.onError = (FlutterErrorDetails details) {
@@ -28,29 +33,6 @@ void main() async {
     debugPrint('[AtNav] Stack: $stack');
     return true;
   };
-
-  // ── Desktop Window Configuration ───────────────────────────────────────────
-  await windowManager.ensureInitialized();
-
-  WindowOptions windowOptions = const WindowOptions(
-    size: Size(
-      AppConstants.initialWindowWidth,
-      AppConstants.initialWindowHeight,
-    ),
-    minimumSize: Size(
-      AppConstants.minWindowWidth,
-      AppConstants.minWindowHeight,
-    ),
-    center: true,
-    backgroundColor: AtNavTheme.bgPrimary,
-    title: 'AtNav /// Decentralized Location Sharing',
-    titleBarStyle: TitleBarStyle.normal,
-  );
-
-  await windowManager.waitUntilReadyToShow(windowOptions, () async {
-    await windowManager.show();
-    await windowManager.focus();
-  });
 
   runApp(const AtNavApp());
 }
