@@ -1,8 +1,12 @@
+import 'dart:io';
 import 'dart:ui';
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:window_manager/window_manager.dart';
+import 'package:flutter/foundation.dart';
 
+import 'core/constants.dart';
 import 'features/ui/map_screen.dart';
 import 'features/ui/onboarding_screen.dart';
 import 'features/ui/theme.dart';
@@ -11,16 +15,52 @@ import 'features/ui/theme.dart';
 ///
 /// Root entrypoint bootstrapping the application context:
 /// - Sets global error/exception handlers
-/// - Locks orientation to portrait on mobile
+/// - On desktop: configures window size, minimum constraints, and title
+/// - On mobile: locks orientation to portrait
 /// - Routes between OnboardingScreen and MapScreen based on auth state
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
-  // ── Lock to portrait on mobile ─────────────────────────────────────────────
-  await SystemChrome.setPreferredOrientations([
-    DeviceOrientation.portraitUp,
-    DeviceOrientation.portraitDown,
-  ]);
+  bool isDesktop = false;
+  bool isMobile = false;
+
+  if (!kIsWeb) {
+    isDesktop = Platform.isMacOS || Platform.isWindows || Platform.isLinux;
+    isMobile = Platform.isAndroid || Platform.isIOS;
+  }
+
+  // ── Mobile: Lock orientation to portrait ───────────────────────────────────
+  if (isMobile) {
+    await SystemChrome.setPreferredOrientations([
+      DeviceOrientation.portraitUp,
+      DeviceOrientation.portraitDown,
+    ]);
+  }
+
+  // ── Desktop: Configure window size and position ────────────────────────────
+  if (isDesktop) {
+    await windowManager.ensureInitialized();
+
+    const WindowOptions windowOptions = WindowOptions(
+      size: Size(
+        AppConstants.initialWindowWidth,
+        AppConstants.initialWindowHeight,
+      ),
+      minimumSize: Size(
+        AppConstants.minWindowWidth,
+        AppConstants.minWindowHeight,
+      ),
+      center: true,
+      backgroundColor: AtNavTheme.bgPrimary,
+      title: 'AtNav /// Decentralized Location Sharing',
+      titleBarStyle: TitleBarStyle.normal,
+    );
+
+    await windowManager.waitUntilReadyToShow(windowOptions, () async {
+      await windowManager.show();
+      await windowManager.focus();
+    });
+  }
 
   // ── Global Error Handling ──────────────────────────────────────────────────
   FlutterError.onError = (FlutterErrorDetails details) {
