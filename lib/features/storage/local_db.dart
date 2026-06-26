@@ -34,6 +34,7 @@ class PeerConsents extends Table {
   TextColumn get status => text().withDefault(const Constant('none'))();
   TextColumn get lastUpdated => text()();
   BoolColumn get outboundPermitted => boolean().withDefault(const Constant(true))();
+  TextColumn get displayName => text().nullable()();
 
   @override
   Set<Column> get primaryKey => {peerAtsign};
