@@ -471,15 +471,352 @@ class CoordinatesCompanion extends UpdateCompanion<Coordinate> {
   }
 }
 
+class $PeerConsentsTable extends PeerConsents
+    with TableInfo<$PeerConsentsTable, PeerConsent> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $PeerConsentsTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _peerAtsignMeta = const VerificationMeta(
+    'peerAtsign',
+  );
+  @override
+  late final GeneratedColumn<String> peerAtsign = GeneratedColumn<String>(
+    'peer_atsign',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _statusMeta = const VerificationMeta('status');
+  @override
+  late final GeneratedColumn<String> status = GeneratedColumn<String>(
+    'status',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    defaultValue: const Constant('none'),
+  );
+  static const VerificationMeta _lastUpdatedMeta = const VerificationMeta(
+    'lastUpdated',
+  );
+  @override
+  late final GeneratedColumn<String> lastUpdated = GeneratedColumn<String>(
+    'last_updated',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _outboundPermittedMeta = const VerificationMeta(
+    'outboundPermitted',
+  );
+  @override
+  late final GeneratedColumn<bool> outboundPermitted = GeneratedColumn<bool>(
+    'outbound_permitted',
+    aliasedName,
+    false,
+    type: DriftSqlType.bool,
+    requiredDuringInsert: false,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'CHECK ("outbound_permitted" IN (0, 1))',
+    ),
+    defaultValue: const Constant(true),
+  );
+  @override
+  List<GeneratedColumn> get $columns => [
+    peerAtsign,
+    status,
+    lastUpdated,
+    outboundPermitted,
+  ];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'peer_consents';
+  @override
+  VerificationContext validateIntegrity(
+    Insertable<PeerConsent> instance, {
+    bool isInserting = false,
+  }) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('peer_atsign')) {
+      context.handle(
+        _peerAtsignMeta,
+        peerAtsign.isAcceptableOrUnknown(data['peer_atsign']!, _peerAtsignMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_peerAtsignMeta);
+    }
+    if (data.containsKey('status')) {
+      context.handle(
+        _statusMeta,
+        status.isAcceptableOrUnknown(data['status']!, _statusMeta),
+      );
+    }
+    if (data.containsKey('last_updated')) {
+      context.handle(
+        _lastUpdatedMeta,
+        lastUpdated.isAcceptableOrUnknown(
+          data['last_updated']!,
+          _lastUpdatedMeta,
+        ),
+      );
+    } else if (isInserting) {
+      context.missing(_lastUpdatedMeta);
+    }
+    if (data.containsKey('outbound_permitted')) {
+      context.handle(
+        _outboundPermittedMeta,
+        outboundPermitted.isAcceptableOrUnknown(
+          data['outbound_permitted']!,
+          _outboundPermittedMeta,
+        ),
+      );
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {peerAtsign};
+  @override
+  PeerConsent map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return PeerConsent(
+      peerAtsign:
+          attachedDatabase.typeMapping.read(
+            DriftSqlType.string,
+            data['${effectivePrefix}peer_atsign'],
+          )!,
+      status:
+          attachedDatabase.typeMapping.read(
+            DriftSqlType.string,
+            data['${effectivePrefix}status'],
+          )!,
+      lastUpdated:
+          attachedDatabase.typeMapping.read(
+            DriftSqlType.string,
+            data['${effectivePrefix}last_updated'],
+          )!,
+      outboundPermitted:
+          attachedDatabase.typeMapping.read(
+            DriftSqlType.bool,
+            data['${effectivePrefix}outbound_permitted'],
+          )!,
+    );
+  }
+
+  @override
+  $PeerConsentsTable createAlias(String alias) {
+    return $PeerConsentsTable(attachedDatabase, alias);
+  }
+}
+
+class PeerConsent extends DataClass implements Insertable<PeerConsent> {
+  final String peerAtsign;
+  final String status;
+  final String lastUpdated;
+  final bool outboundPermitted;
+  const PeerConsent({
+    required this.peerAtsign,
+    required this.status,
+    required this.lastUpdated,
+    required this.outboundPermitted,
+  });
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['peer_atsign'] = Variable<String>(peerAtsign);
+    map['status'] = Variable<String>(status);
+    map['last_updated'] = Variable<String>(lastUpdated);
+    map['outbound_permitted'] = Variable<bool>(outboundPermitted);
+    return map;
+  }
+
+  PeerConsentsCompanion toCompanion(bool nullToAbsent) {
+    return PeerConsentsCompanion(
+      peerAtsign: Value(peerAtsign),
+      status: Value(status),
+      lastUpdated: Value(lastUpdated),
+      outboundPermitted: Value(outboundPermitted),
+    );
+  }
+
+  factory PeerConsent.fromJson(
+    Map<String, dynamic> json, {
+    ValueSerializer? serializer,
+  }) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return PeerConsent(
+      peerAtsign: serializer.fromJson<String>(json['peerAtsign']),
+      status: serializer.fromJson<String>(json['status']),
+      lastUpdated: serializer.fromJson<String>(json['lastUpdated']),
+      outboundPermitted: serializer.fromJson<bool>(json['outboundPermitted']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'peerAtsign': serializer.toJson<String>(peerAtsign),
+      'status': serializer.toJson<String>(status),
+      'lastUpdated': serializer.toJson<String>(lastUpdated),
+      'outboundPermitted': serializer.toJson<bool>(outboundPermitted),
+    };
+  }
+
+  PeerConsent copyWith({
+    String? peerAtsign,
+    String? status,
+    String? lastUpdated,
+    bool? outboundPermitted,
+  }) => PeerConsent(
+    peerAtsign: peerAtsign ?? this.peerAtsign,
+    status: status ?? this.status,
+    lastUpdated: lastUpdated ?? this.lastUpdated,
+    outboundPermitted: outboundPermitted ?? this.outboundPermitted,
+  );
+  PeerConsent copyWithCompanion(PeerConsentsCompanion data) {
+    return PeerConsent(
+      peerAtsign:
+          data.peerAtsign.present ? data.peerAtsign.value : this.peerAtsign,
+      status: data.status.present ? data.status.value : this.status,
+      lastUpdated:
+          data.lastUpdated.present ? data.lastUpdated.value : this.lastUpdated,
+      outboundPermitted:
+          data.outboundPermitted.present
+              ? data.outboundPermitted.value
+              : this.outboundPermitted,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('PeerConsent(')
+          ..write('peerAtsign: $peerAtsign, ')
+          ..write('status: $status, ')
+          ..write('lastUpdated: $lastUpdated, ')
+          ..write('outboundPermitted: $outboundPermitted')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode =>
+      Object.hash(peerAtsign, status, lastUpdated, outboundPermitted);
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is PeerConsent &&
+          other.peerAtsign == this.peerAtsign &&
+          other.status == this.status &&
+          other.lastUpdated == this.lastUpdated &&
+          other.outboundPermitted == this.outboundPermitted);
+}
+
+class PeerConsentsCompanion extends UpdateCompanion<PeerConsent> {
+  final Value<String> peerAtsign;
+  final Value<String> status;
+  final Value<String> lastUpdated;
+  final Value<bool> outboundPermitted;
+  final Value<int> rowid;
+  const PeerConsentsCompanion({
+    this.peerAtsign = const Value.absent(),
+    this.status = const Value.absent(),
+    this.lastUpdated = const Value.absent(),
+    this.outboundPermitted = const Value.absent(),
+    this.rowid = const Value.absent(),
+  });
+  PeerConsentsCompanion.insert({
+    required String peerAtsign,
+    this.status = const Value.absent(),
+    required String lastUpdated,
+    this.outboundPermitted = const Value.absent(),
+    this.rowid = const Value.absent(),
+  }) : peerAtsign = Value(peerAtsign),
+       lastUpdated = Value(lastUpdated);
+  static Insertable<PeerConsent> custom({
+    Expression<String>? peerAtsign,
+    Expression<String>? status,
+    Expression<String>? lastUpdated,
+    Expression<bool>? outboundPermitted,
+    Expression<int>? rowid,
+  }) {
+    return RawValuesInsertable({
+      if (peerAtsign != null) 'peer_atsign': peerAtsign,
+      if (status != null) 'status': status,
+      if (lastUpdated != null) 'last_updated': lastUpdated,
+      if (outboundPermitted != null) 'outbound_permitted': outboundPermitted,
+      if (rowid != null) 'rowid': rowid,
+    });
+  }
+
+  PeerConsentsCompanion copyWith({
+    Value<String>? peerAtsign,
+    Value<String>? status,
+    Value<String>? lastUpdated,
+    Value<bool>? outboundPermitted,
+    Value<int>? rowid,
+  }) {
+    return PeerConsentsCompanion(
+      peerAtsign: peerAtsign ?? this.peerAtsign,
+      status: status ?? this.status,
+      lastUpdated: lastUpdated ?? this.lastUpdated,
+      outboundPermitted: outboundPermitted ?? this.outboundPermitted,
+      rowid: rowid ?? this.rowid,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (peerAtsign.present) {
+      map['peer_atsign'] = Variable<String>(peerAtsign.value);
+    }
+    if (status.present) {
+      map['status'] = Variable<String>(status.value);
+    }
+    if (lastUpdated.present) {
+      map['last_updated'] = Variable<String>(lastUpdated.value);
+    }
+    if (outboundPermitted.present) {
+      map['outbound_permitted'] = Variable<bool>(outboundPermitted.value);
+    }
+    if (rowid.present) {
+      map['rowid'] = Variable<int>(rowid.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('PeerConsentsCompanion(')
+          ..write('peerAtsign: $peerAtsign, ')
+          ..write('status: $status, ')
+          ..write('lastUpdated: $lastUpdated, ')
+          ..write('outboundPermitted: $outboundPermitted, ')
+          ..write('rowid: $rowid')
+          ..write(')'))
+        .toString();
+  }
+}
+
 abstract class _$LocalDb extends GeneratedDatabase {
   _$LocalDb(QueryExecutor e) : super(e);
   $LocalDbManager get managers => $LocalDbManager(this);
   late final $CoordinatesTable coordinates = $CoordinatesTable(this);
+  late final $PeerConsentsTable peerConsents = $PeerConsentsTable(this);
   @override
   Iterable<TableInfo<Table, Object?>> get allTables =>
       allSchemaEntities.whereType<TableInfo<Table, Object?>>();
   @override
-  List<DatabaseSchemaEntity> get allSchemaEntities => [coordinates];
+  List<DatabaseSchemaEntity> get allSchemaEntities => [
+    coordinates,
+    peerConsents,
+  ];
 }
 
 typedef $$CoordinatesTableCreateCompanionBuilder =
@@ -723,10 +1060,204 @@ typedef $$CoordinatesTableProcessedTableManager =
       Coordinate,
       PrefetchHooks Function()
     >;
+typedef $$PeerConsentsTableCreateCompanionBuilder =
+    PeerConsentsCompanion Function({
+      required String peerAtsign,
+      Value<String> status,
+      required String lastUpdated,
+      Value<bool> outboundPermitted,
+      Value<int> rowid,
+    });
+typedef $$PeerConsentsTableUpdateCompanionBuilder =
+    PeerConsentsCompanion Function({
+      Value<String> peerAtsign,
+      Value<String> status,
+      Value<String> lastUpdated,
+      Value<bool> outboundPermitted,
+      Value<int> rowid,
+    });
+
+class $$PeerConsentsTableFilterComposer
+    extends Composer<_$LocalDb, $PeerConsentsTable> {
+  $$PeerConsentsTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<String> get peerAtsign => $composableBuilder(
+    column: $table.peerAtsign,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get status => $composableBuilder(
+    column: $table.status,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get lastUpdated => $composableBuilder(
+    column: $table.lastUpdated,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<bool> get outboundPermitted => $composableBuilder(
+    column: $table.outboundPermitted,
+    builder: (column) => ColumnFilters(column),
+  );
+}
+
+class $$PeerConsentsTableOrderingComposer
+    extends Composer<_$LocalDb, $PeerConsentsTable> {
+  $$PeerConsentsTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<String> get peerAtsign => $composableBuilder(
+    column: $table.peerAtsign,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get status => $composableBuilder(
+    column: $table.status,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get lastUpdated => $composableBuilder(
+    column: $table.lastUpdated,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<bool> get outboundPermitted => $composableBuilder(
+    column: $table.outboundPermitted,
+    builder: (column) => ColumnOrderings(column),
+  );
+}
+
+class $$PeerConsentsTableAnnotationComposer
+    extends Composer<_$LocalDb, $PeerConsentsTable> {
+  $$PeerConsentsTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<String> get peerAtsign => $composableBuilder(
+    column: $table.peerAtsign,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get status =>
+      $composableBuilder(column: $table.status, builder: (column) => column);
+
+  GeneratedColumn<String> get lastUpdated => $composableBuilder(
+    column: $table.lastUpdated,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<bool> get outboundPermitted => $composableBuilder(
+    column: $table.outboundPermitted,
+    builder: (column) => column,
+  );
+}
+
+class $$PeerConsentsTableTableManager
+    extends
+        RootTableManager<
+          _$LocalDb,
+          $PeerConsentsTable,
+          PeerConsent,
+          $$PeerConsentsTableFilterComposer,
+          $$PeerConsentsTableOrderingComposer,
+          $$PeerConsentsTableAnnotationComposer,
+          $$PeerConsentsTableCreateCompanionBuilder,
+          $$PeerConsentsTableUpdateCompanionBuilder,
+          (
+            PeerConsent,
+            BaseReferences<_$LocalDb, $PeerConsentsTable, PeerConsent>,
+          ),
+          PeerConsent,
+          PrefetchHooks Function()
+        > {
+  $$PeerConsentsTableTableManager(_$LocalDb db, $PeerConsentsTable table)
+    : super(
+        TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer:
+              () => $$PeerConsentsTableFilterComposer($db: db, $table: table),
+          createOrderingComposer:
+              () => $$PeerConsentsTableOrderingComposer($db: db, $table: table),
+          createComputedFieldComposer:
+              () =>
+                  $$PeerConsentsTableAnnotationComposer($db: db, $table: table),
+          updateCompanionCallback:
+              ({
+                Value<String> peerAtsign = const Value.absent(),
+                Value<String> status = const Value.absent(),
+                Value<String> lastUpdated = const Value.absent(),
+                Value<bool> outboundPermitted = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => PeerConsentsCompanion(
+                peerAtsign: peerAtsign,
+                status: status,
+                lastUpdated: lastUpdated,
+                outboundPermitted: outboundPermitted,
+                rowid: rowid,
+              ),
+          createCompanionCallback:
+              ({
+                required String peerAtsign,
+                Value<String> status = const Value.absent(),
+                required String lastUpdated,
+                Value<bool> outboundPermitted = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => PeerConsentsCompanion.insert(
+                peerAtsign: peerAtsign,
+                status: status,
+                lastUpdated: lastUpdated,
+                outboundPermitted: outboundPermitted,
+                rowid: rowid,
+              ),
+          withReferenceMapper:
+              (p0) =>
+                  p0
+                      .map(
+                        (e) => (
+                          e.readTable(table),
+                          BaseReferences(db, table, e),
+                        ),
+                      )
+                      .toList(),
+          prefetchHooksCallback: null,
+        ),
+      );
+}
+
+typedef $$PeerConsentsTableProcessedTableManager =
+    ProcessedTableManager<
+      _$LocalDb,
+      $PeerConsentsTable,
+      PeerConsent,
+      $$PeerConsentsTableFilterComposer,
+      $$PeerConsentsTableOrderingComposer,
+      $$PeerConsentsTableAnnotationComposer,
+      $$PeerConsentsTableCreateCompanionBuilder,
+      $$PeerConsentsTableUpdateCompanionBuilder,
+      (PeerConsent, BaseReferences<_$LocalDb, $PeerConsentsTable, PeerConsent>),
+      PeerConsent,
+      PrefetchHooks Function()
+    >;
 
 class $LocalDbManager {
   final _$LocalDb _db;
   $LocalDbManager(this._db);
   $$CoordinatesTableTableManager get coordinates =>
       $$CoordinatesTableTableManager(_db, _db.coordinates);
+  $$PeerConsentsTableTableManager get peerConsents =>
+      $$PeerConsentsTableTableManager(_db, _db.peerConsents);
 }
