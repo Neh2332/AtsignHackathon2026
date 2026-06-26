@@ -346,9 +346,9 @@ class _PeerPanelState extends State<PeerPanel> {
                             AtNavTheme.bgElevated,
                           ),
                           shape: WidgetStateProperty.all(
-                            const RoundedRectangleBorder(
-                              borderRadius: BorderRadius.zero,
-                              side: BorderSide(
+                            RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(6),
+                              side: const BorderSide(
                                 color: AtNavTheme.borderColor,
                               ),
                             ),
