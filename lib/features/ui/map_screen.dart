@@ -384,10 +384,15 @@ class _MapScreenState extends State<MapScreen> with TickerProviderStateMixin {
             ),
           ],
         ),
-      child: Column(
-        children: [
-          // Drag handle
-          Padding(
+      child: PeerPanel(
+        streamer: _streamer,
+        listener: _listener,
+        latestPositions: _latestPositions,
+        hiddenPeers: _hiddenPeers,
+        onToggleVisibility: _togglePeerVisibility,
+        scrollController: scrollController,
+        headerWidget: Center(
+          child: Padding(
             padding: const EdgeInsets.symmetric(vertical: 10),
             child: Container(
               width: 40,
@@ -398,18 +403,7 @@ class _MapScreenState extends State<MapScreen> with TickerProviderStateMixin {
               ),
             ),
           ),
-          // Peer panel scrolls inside the sheet
-          Expanded(
-            child: PeerPanel(
-              streamer: _streamer,
-              listener: _listener,
-              latestPositions: _latestPositions,
-              hiddenPeers: _hiddenPeers,
-              onToggleVisibility: _togglePeerVisibility,
-              scrollController: scrollController,
-            ),
-          ),
-        ],
+        ),
       ),
     ));
   }
