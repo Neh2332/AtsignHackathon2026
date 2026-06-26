@@ -743,8 +743,8 @@ class _MapScreenState extends State<MapScreen> with TickerProviderStateMixin {
     }
 
     return Positioned(
-      right: 16,
-      bottom: isMobile ? 120 : 32, 
+      right: 12,
+      top: 100, 
       child: content,
     );
   }
