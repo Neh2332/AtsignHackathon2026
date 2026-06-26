@@ -15,12 +15,17 @@ import 'theme.dart';
 /// - Live peer cards with: atSign, last coordinates, signal age, toggle sharing
 /// - Streaming controls (start/stop broadcasting)
 /// - Connection and telemetry status indicators
+///
+/// When used inside a [DraggableScrollableSheet], pass its [scrollController]
+/// so the sheet's drag gesture is linked to the list scroll.
 class PeerPanel extends StatefulWidget {
   final TelemetryStreamer streamer;
   final TelemetryListener listener;
   final Map<String, TelemetryPoint> latestPositions;
   final Set<String> hiddenPeers;
   final Function(String) onToggleVisibility;
+  /// Optional scroll controller from a DraggableScrollableSheet.
+  final ScrollController? scrollController;
 
   const PeerPanel({
     super.key,
@@ -29,6 +34,7 @@ class PeerPanel extends StatefulWidget {
     required this.latestPositions,
     required this.hiddenPeers,
     required this.onToggleVisibility,
+    this.scrollController,
   });
 
   @override
@@ -396,6 +402,7 @@ class _PeerPanelState extends State<PeerPanel> {
                 }
 
                 return ListView.separated(
+                  controller: widget.scrollController,
                   padding: EdgeInsets.zero,
                   itemCount: validPeers.length,
                   separatorBuilder: (_, __) => const Divider(
