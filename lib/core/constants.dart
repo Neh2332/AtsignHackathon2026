@@ -33,6 +33,9 @@ class AppConstants {
   /// Fully qualified key with namespace: `location.AtNav`
   static const String locationKeyFull = '$locationKeyName.$appNamespace';
 
+  /// Key name used for mutual consent handshake notifications.
+  static const String consentKeyName = 'mutual_consent';
+
   // ── Local Storage & Eviction ─────────────────────────────────────────────
   /// Maximum age (hours) for locally cached coordinate trails.
   /// Records older than this are automatically purged by the eviction loop.
