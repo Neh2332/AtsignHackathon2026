@@ -331,7 +331,7 @@ class LocalDb extends _$LocalDb {
   // ── Peer Consent Operations ────────────────────────────────────────────────
 
   /// Updates or inserts a peer's consent status.
-  Future<int> updateConsentStatus(String peerAtSign, String status, {bool? outboundPermitted}) {
+  Future<int> updateConsentStatus(String peerAtSign, String status, {bool? outboundPermitted, String? displayName}) {
     return into(peerConsents).insertOnConflictUpdate(
       PeerConsentsCompanion.insert(
         peerAtsign: peerAtSign,
