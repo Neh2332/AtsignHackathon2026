@@ -524,12 +524,24 @@ class $PeerConsentsTable extends PeerConsents
     ),
     defaultValue: const Constant(true),
   );
+  static const VerificationMeta _displayNameMeta = const VerificationMeta(
+    'displayName',
+  );
+  @override
+  late final GeneratedColumn<String> displayName = GeneratedColumn<String>(
+    'display_name',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
   @override
   List<GeneratedColumn> get $columns => [
     peerAtsign,
     status,
     lastUpdated,
     outboundPermitted,
+    displayName,
   ];
   @override
   String get aliasedName => _alias ?? actualTableName;
@@ -577,6 +589,15 @@ class $PeerConsentsTable extends PeerConsents
         ),
       );
     }
+    if (data.containsKey('display_name')) {
+      context.handle(
+        _displayNameMeta,
+        displayName.isAcceptableOrUnknown(
+          data['display_name']!,
+          _displayNameMeta,
+        ),
+      );
+    }
     return context;
   }
 
@@ -606,6 +627,10 @@ class $PeerConsentsTable extends PeerConsents
             DriftSqlType.bool,
             data['${effectivePrefix}outbound_permitted'],
           )!,
+      displayName: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}display_name'],
+      ),
     );
   }
 
@@ -620,11 +645,13 @@ class PeerConsent extends DataClass implements Insertable<PeerConsent> {
   final String status;
   final String lastUpdated;
   final bool outboundPermitted;
+  final String? displayName;
   const PeerConsent({
     required this.peerAtsign,
     required this.status,
     required this.lastUpdated,
     required this.outboundPermitted,
+    this.displayName,
   });
   @override
   Map<String, Expression> toColumns(bool nullToAbsent) {
@@ -633,6 +660,9 @@ class PeerConsent extends DataClass implements Insertable<PeerConsent> {
     map['status'] = Variable<String>(status);
     map['last_updated'] = Variable<String>(lastUpdated);
     map['outbound_permitted'] = Variable<bool>(outboundPermitted);
+    if (!nullToAbsent || displayName != null) {
+      map['display_name'] = Variable<String>(displayName);
+    }
     return map;
   }
 
@@ -642,6 +672,10 @@ class PeerConsent extends DataClass implements Insertable<PeerConsent> {
       status: Value(status),
       lastUpdated: Value(lastUpdated),
       outboundPermitted: Value(outboundPermitted),
+      displayName:
+          displayName == null && nullToAbsent
+              ? const Value.absent()
+              : Value(displayName),
     );
   }
 
@@ -655,6 +689,7 @@ class PeerConsent extends DataClass implements Insertable<PeerConsent> {
       status: serializer.fromJson<String>(json['status']),
       lastUpdated: serializer.fromJson<String>(json['lastUpdated']),
       outboundPermitted: serializer.fromJson<bool>(json['outboundPermitted']),
+      displayName: serializer.fromJson<String?>(json['displayName']),
     );
   }
   @override
@@ -665,6 +700,7 @@ class PeerConsent extends DataClass implements Insertable<PeerConsent> {
       'status': serializer.toJson<String>(status),
       'lastUpdated': serializer.toJson<String>(lastUpdated),
       'outboundPermitted': serializer.toJson<bool>(outboundPermitted),
+      'displayName': serializer.toJson<String?>(displayName),
     };
   }
 
@@ -673,11 +709,13 @@ class PeerConsent extends DataClass implements Insertable<PeerConsent> {
     String? status,
     String? lastUpdated,
     bool? outboundPermitted,
+    Value<String?> displayName = const Value.absent(),
   }) => PeerConsent(
     peerAtsign: peerAtsign ?? this.peerAtsign,
     status: status ?? this.status,
     lastUpdated: lastUpdated ?? this.lastUpdated,
     outboundPermitted: outboundPermitted ?? this.outboundPermitted,
+    displayName: displayName.present ? displayName.value : this.displayName,
   );
   PeerConsent copyWithCompanion(PeerConsentsCompanion data) {
     return PeerConsent(
@@ -690,6 +728,8 @@ class PeerConsent extends DataClass implements Insertable<PeerConsent> {
           data.outboundPermitted.present
               ? data.outboundPermitted.value
               : this.outboundPermitted,
+      displayName:
+          data.displayName.present ? data.displayName.value : this.displayName,
     );
   }
 
@@ -699,14 +739,20 @@ class PeerConsent extends DataClass implements Insertable<PeerConsent> {
           ..write('peerAtsign: $peerAtsign, ')
           ..write('status: $status, ')
           ..write('lastUpdated: $lastUpdated, ')
-          ..write('outboundPermitted: $outboundPermitted')
+          ..write('outboundPermitted: $outboundPermitted, ')
+          ..write('displayName: $displayName')
           ..write(')'))
         .toString();
   }
 
   @override
-  int get hashCode =>
-      Object.hash(peerAtsign, status, lastUpdated, outboundPermitted);
+  int get hashCode => Object.hash(
+    peerAtsign,
+    status,
+    lastUpdated,
+    outboundPermitted,
+    displayName,
+  );
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||
@@ -714,7 +760,8 @@ class PeerConsent extends DataClass implements Insertable<PeerConsent> {
           other.peerAtsign == this.peerAtsign &&
           other.status == this.status &&
           other.lastUpdated == this.lastUpdated &&
-          other.outboundPermitted == this.outboundPermitted);
+          other.outboundPermitted == this.outboundPermitted &&
+          other.displayName == this.displayName);
 }
 
 class PeerConsentsCompanion extends UpdateCompanion<PeerConsent> {
@@ -722,12 +769,14 @@ class PeerConsentsCompanion extends UpdateCompanion<PeerConsent> {
   final Value<String> status;
   final Value<String> lastUpdated;
   final Value<bool> outboundPermitted;
+  final Value<String?> displayName;
   final Value<int> rowid;
   const PeerConsentsCompanion({
     this.peerAtsign = const Value.absent(),
     this.status = const Value.absent(),
     this.lastUpdated = const Value.absent(),
     this.outboundPermitted = const Value.absent(),
+    this.displayName = const Value.absent(),
     this.rowid = const Value.absent(),
   });
   PeerConsentsCompanion.insert({
@@ -735,6 +784,7 @@ class PeerConsentsCompanion extends UpdateCompanion<PeerConsent> {
     this.status = const Value.absent(),
     required String lastUpdated,
     this.outboundPermitted = const Value.absent(),
+    this.displayName = const Value.absent(),
     this.rowid = const Value.absent(),
   }) : peerAtsign = Value(peerAtsign),
        lastUpdated = Value(lastUpdated);
@@ -743,6 +793,7 @@ class PeerConsentsCompanion extends UpdateCompanion<PeerConsent> {
     Expression<String>? status,
     Expression<String>? lastUpdated,
     Expression<bool>? outboundPermitted,
+    Expression<String>? displayName,
     Expression<int>? rowid,
   }) {
     return RawValuesInsertable({
@@ -750,6 +801,7 @@ class PeerConsentsCompanion extends UpdateCompanion<PeerConsent> {
       if (status != null) 'status': status,
       if (lastUpdated != null) 'last_updated': lastUpdated,
       if (outboundPermitted != null) 'outbound_permitted': outboundPermitted,
+      if (displayName != null) 'display_name': displayName,
       if (rowid != null) 'rowid': rowid,
     });
   }
@@ -759,6 +811,7 @@ class PeerConsentsCompanion extends UpdateCompanion<PeerConsent> {
     Value<String>? status,
     Value<String>? lastUpdated,
     Value<bool>? outboundPermitted,
+    Value<String?>? displayName,
     Value<int>? rowid,
   }) {
     return PeerConsentsCompanion(
@@ -766,6 +819,7 @@ class PeerConsentsCompanion extends UpdateCompanion<PeerConsent> {
       status: status ?? this.status,
       lastUpdated: lastUpdated ?? this.lastUpdated,
       outboundPermitted: outboundPermitted ?? this.outboundPermitted,
+      displayName: displayName ?? this.displayName,
       rowid: rowid ?? this.rowid,
     );
   }
@@ -785,6 +839,9 @@ class PeerConsentsCompanion extends UpdateCompanion<PeerConsent> {
     if (outboundPermitted.present) {
       map['outbound_permitted'] = Variable<bool>(outboundPermitted.value);
     }
+    if (displayName.present) {
+      map['display_name'] = Variable<String>(displayName.value);
+    }
     if (rowid.present) {
       map['rowid'] = Variable<int>(rowid.value);
     }
@@ -798,6 +855,7 @@ class PeerConsentsCompanion extends UpdateCompanion<PeerConsent> {
           ..write('status: $status, ')
           ..write('lastUpdated: $lastUpdated, ')
           ..write('outboundPermitted: $outboundPermitted, ')
+          ..write('displayName: $displayName, ')
           ..write('rowid: $rowid')
           ..write(')'))
         .toString();
@@ -1066,6 +1124,7 @@ typedef $$PeerConsentsTableCreateCompanionBuilder =
       Value<String> status,
       required String lastUpdated,
       Value<bool> outboundPermitted,
+      Value<String?> displayName,
       Value<int> rowid,
     });
 typedef $$PeerConsentsTableUpdateCompanionBuilder =
@@ -1074,6 +1133,7 @@ typedef $$PeerConsentsTableUpdateCompanionBuilder =
       Value<String> status,
       Value<String> lastUpdated,
       Value<bool> outboundPermitted,
+      Value<String?> displayName,
       Value<int> rowid,
     });
 
@@ -1103,6 +1163,11 @@ class $$PeerConsentsTableFilterComposer
 
   ColumnFilters<bool> get outboundPermitted => $composableBuilder(
     column: $table.outboundPermitted,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get displayName => $composableBuilder(
+    column: $table.displayName,
     builder: (column) => ColumnFilters(column),
   );
 }
@@ -1135,6 +1200,11 @@ class $$PeerConsentsTableOrderingComposer
     column: $table.outboundPermitted,
     builder: (column) => ColumnOrderings(column),
   );
+
+  ColumnOrderings<String> get displayName => $composableBuilder(
+    column: $table.displayName,
+    builder: (column) => ColumnOrderings(column),
+  );
 }
 
 class $$PeerConsentsTableAnnotationComposer
@@ -1161,6 +1231,11 @@ class $$PeerConsentsTableAnnotationComposer
 
   GeneratedColumn<bool> get outboundPermitted => $composableBuilder(
     column: $table.outboundPermitted,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get displayName => $composableBuilder(
+    column: $table.displayName,
     builder: (column) => column,
   );
 }
@@ -1201,12 +1276,14 @@ class $$PeerConsentsTableTableManager
                 Value<String> status = const Value.absent(),
                 Value<String> lastUpdated = const Value.absent(),
                 Value<bool> outboundPermitted = const Value.absent(),
+                Value<String?> displayName = const Value.absent(),
                 Value<int> rowid = const Value.absent(),
               }) => PeerConsentsCompanion(
                 peerAtsign: peerAtsign,
                 status: status,
                 lastUpdated: lastUpdated,
                 outboundPermitted: outboundPermitted,
+                displayName: displayName,
                 rowid: rowid,
               ),
           createCompanionCallback:
@@ -1215,12 +1292,14 @@ class $$PeerConsentsTableTableManager
                 Value<String> status = const Value.absent(),
                 required String lastUpdated,
                 Value<bool> outboundPermitted = const Value.absent(),
+                Value<String?> displayName = const Value.absent(),
                 Value<int> rowid = const Value.absent(),
               }) => PeerConsentsCompanion.insert(
                 peerAtsign: peerAtsign,
                 status: status,
                 lastUpdated: lastUpdated,
                 outboundPermitted: outboundPermitted,
+                displayName: displayName,
                 rowid: rowid,
               ),
           withReferenceMapper:
