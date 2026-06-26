@@ -1,6 +1,8 @@
 import 'dart:async';
+import 'dart:convert';
 
 import 'package:at_client/at_client.dart';
+import 'package:at_utils/at_utils.dart';
 import 'package:flutter/foundation.dart';
 
 import '../../core/at_service.dart';
@@ -133,38 +135,72 @@ class TelemetryListener extends ChangeNotifier {
         return;
       }
 
+      // Extract and normalize the sender's atSign
+      final senderAtSign = AtUtils.fixAtSign(notification.from);
+
+      // Handle Mutual Consent Handshakes
+      if (notification.key.contains(AppConstants.consentKeyName)) {
+        String status;
+        try {
+          final payload = jsonDecode(notification.value!) as Map<String, dynamic>;
+          status = payload['status'] as String;
+        } catch (_) {
+          // Fallback to legacy plain string
+          status = notification.value!;
+        }
+
+        if (status == 'request') {
+          _localDb.updateConsentStatus(senderAtSign, 'pending_inbound');
+        } else if (status == 'approved') {
+          _localDb.updateConsentStatus(senderAtSign, 'approved');
+        } else if (status == 'revoked') {
+          _localDb.updateConsentStatus(senderAtSign, 'none');
+          // Purge their location history on revoke
+          _localDb.deleteCoordinatesForPeer(senderAtSign);
+        }
+        return;
+      }
+
       // Only process location key notifications
       if (!notification.key.contains(AppConstants.locationKeyName)) {
         return;
       }
 
-      // Extract the sender's atSign from the notification
-      final senderAtSign = notification.from;
+      // Security Guard: Check local consent status before processing
+      _localDb.getConsentStatus(senderAtSign).then((status) {
+        if (status != 'approved') {
+          debugPrint(
+            '[TelemetryListener] SECURITY: Dropping unauthorized telemetry '
+            'from $senderAtSign (status: $status)',
+          );
+          return;
+        }
 
-      // Parse the decrypted JSON payload into a TelemetryPoint
-      final point = TelemetryPoint.fromNotificationJson(
-        notification.value!,
-        senderAtSign,
-      );
+        // Parse the decrypted JSON payload into a TelemetryPoint
+        final point = TelemetryPoint.fromNotificationJson(
+          notification.value!,
+          senderAtSign,
+        );
 
-      // Persist to local SQLite database
-      _localDb.insertCoordinate(point);
+        // Persist to local SQLite database
+        _localDb.insertCoordinate(point);
 
-      // Update state
-      _receivedCount++;
-      _lastReceivedPoint = point;
-      _lastError = null;
+        // Update state
+        _receivedCount++;
+        _lastReceivedPoint = point;
+        _lastError = null;
 
-      // Emit on the broadcast stream for real-time UI updates
-      _pointController.add(point);
+        // Emit on the broadcast stream for real-time UI updates
+        _pointController.add(point);
 
-      notifyListeners();
+        notifyListeners();
 
-      debugPrint(
-        '[TelemetryListener] Received from $senderAtSign: '
-        '${point.latitude.toStringAsFixed(4)}, '
-        '${point.longitude.toStringAsFixed(4)}',
-      );
+        debugPrint(
+          '[TelemetryListener] Received from $senderAtSign: '
+          '${point.latitude.toStringAsFixed(4)}, '
+          '${point.longitude.toStringAsFixed(4)}',
+        );
+      });
     } catch (e) {
       _lastError = 'Parse error: $e';
       notifyListeners();
