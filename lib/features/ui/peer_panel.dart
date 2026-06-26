@@ -5,6 +5,7 @@ import '../../core/at_service.dart';
 import '../../models/telemetry_point.dart';
 import '../publisher/telemetry_streamer.dart';
 import '../subscriber/telemetry_listener.dart';
+import '../storage/local_db.dart';
 import 'theme.dart';
 
 /// Left-side peer management panel with industrial brutalist styling.
@@ -18,22 +19,26 @@ class PeerPanel extends StatefulWidget {
   final TelemetryStreamer streamer;
   final TelemetryListener listener;
   final Map<String, TelemetryPoint> latestPositions;
+  final Set<String> hiddenPeers;
+  final Function(String) onToggleVisibility;
 
   const PeerPanel({
     super.key,
     required this.streamer,
     required this.listener,
     required this.latestPositions,
+    required this.hiddenPeers,
+    required this.onToggleVisibility,
   });
 
   @override
   State<PeerPanel> createState() => _PeerPanelState();
 }
 
+
 class _PeerPanelState extends State<PeerPanel> {
   final TextEditingController _peerInputController = TextEditingController();
   final DateFormat _timeFormat = DateFormat('HH:mm:ss');
-
   @override
   void dispose() {
     _peerInputController.dispose();
@@ -45,13 +50,12 @@ class _PeerPanelState extends State<PeerPanel> {
     if (input.isEmpty) return;
 
     final atSign = input.startsWith('@') ? input : '@$input';
-    widget.streamer.addRecipient(atSign);
+    
+    // Initiate consent handshake
+    AtService.instance.sendConsentRequest(atSign);
+    LocalDb.instance.updateConsentStatus(atSign, 'pending_outbound');
+    
     _peerInputController.clear();
-    setState(() {});
-  }
-
-  void _removePeer(String atSign) {
-    widget.streamer.removeRecipient(atSign);
     setState(() {});
   }
 
@@ -63,10 +67,96 @@ class _PeerPanelState extends State<PeerPanel> {
     return '${age.inDays}D AGO';
   }
 
+  Widget _buildStatusControls(String peer, String status, bool outboundPermitted) {
+    if (status == 'pending_inbound') {
+      return Row(
+        children: [
+          Expanded(
+            child: SizedBox(
+              height: 28,
+              child: ElevatedButton(
+                onPressed: () {
+                  AtService.instance.acceptConsentRequest(peer);
+                  LocalDb.instance.updateConsentStatus(peer, 'approved');
+                },
+                style: AtNavTheme.primaryButton(),
+                child: Text('ACCEPT', style: AtNavTheme.monoData(size: 10)),
+              ),
+            ),
+          ),
+          const SizedBox(width: 8),
+          Expanded(
+            child: SizedBox(
+              height: 28,
+              child: ElevatedButton(
+                onPressed: () {
+                  AtService.instance.revokeConsent(peer);
+                  LocalDb.instance.updateConsentStatus(peer, 'none');
+                },
+                style: AtNavTheme.primaryButton(isDestructive: true),
+                child: Text('REJECT', style: AtNavTheme.monoData(size: 10)),
+              ),
+            ),
+          ),
+        ],
+      );
+    } else if (status == 'pending_outbound') {
+      return Row(
+        children: [
+          Text('WAITING...', style: AtNavTheme.monoLabel(size: 10, color: AtNavTheme.fgTertiary)),
+          const Spacer(),
+          InkWell(
+            onTap: () {
+              AtService.instance.revokeConsent(peer);
+              LocalDb.instance.updateConsentStatus(peer, 'none');
+            },
+            child: Text('[CANCEL]', style: AtNavTheme.monoData(size: 10, color: AtNavTheme.accentOrange)),
+          ),
+        ],
+      );
+    } else if (status == 'approved') {
+      return Row(
+        children: [
+          Text('ACTIVE', style: AtNavTheme.monoLabel(size: 10, color: AtNavTheme.terminalGreen)),
+          const Spacer(),
+          InkWell(
+            onTap: () {
+               LocalDb.instance.updateConsentStatus(peer, 'approved', outboundPermitted: !outboundPermitted);
+            },
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+              decoration: BoxDecoration(
+                color: outboundPermitted ? AtNavTheme.terminalGreen.withValues(alpha: 0.1) : Colors.transparent,
+                border: Border.all(color: outboundPermitted ? AtNavTheme.terminalGreen : AtNavTheme.fgTertiary),
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: Text(
+                outboundPermitted ? 'TX ON' : 'TX OFF',
+                style: AtNavTheme.monoData(
+                  size: 9,
+                  color: outboundPermitted ? AtNavTheme.terminalGreen : AtNavTheme.fgTertiary,
+                ),
+              ),
+            ),
+          ),
+          const SizedBox(width: 12),
+          InkWell(
+            onTap: () {
+              AtService.instance.revokeConsent(peer);
+              LocalDb.instance.updateConsentStatus(peer, 'none');
+              LocalDb.instance.deleteCoordinatesForPeer(peer);
+            },
+            child: Text('[REVOKE]', style: AtNavTheme.monoData(size: 10, color: AtNavTheme.accentOrange)),
+          ),
+        ],
+      );
+    }
+    return const SizedBox.shrink();
+  }
+
   @override
   Widget build(BuildContext context) {
     final atService = AtService.instance;
-    final recipients = widget.streamer.recipients.toList();
 
     return Container(
       decoration: AtNavTheme.panelDecoration(),
@@ -249,6 +339,7 @@ class _PeerPanelState extends State<PeerPanel> {
                     ),
                   ],
                 ),
+                // Share duration dropdown removed
               ],
             ),
           ),
@@ -261,17 +352,10 @@ class _PeerPanelState extends State<PeerPanel> {
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
                 Text(
-                  AtNavTheme.asciiFrame('ACTIVE PEERS'),
+                  AtNavTheme.asciiFrame('CONSENT DIRECTORY'),
                   style: AtNavTheme.monoLabel(
                     size: 9,
                     color: AtNavTheme.accentOrange,
-                  ),
-                ),
-                Text(
-                  '${recipients.length} LINKED',
-                  style: AtNavTheme.monoData(
-                    size: 9,
-                    color: AtNavTheme.fgTertiary,
                   ),
                 ),
               ],
@@ -280,8 +364,14 @@ class _PeerPanelState extends State<PeerPanel> {
 
           // ── Peer List ──────────────────────────────────────────────
           Expanded(
-            child: recipients.isEmpty
-                ? Center(
+            child: StreamBuilder<dynamic>(
+              stream: LocalDb.instance.watchConsents(),
+              builder: (context, snapshot) {
+                final consents = (snapshot.data as List<dynamic>?) ?? [];
+                final validPeers = consents.where((c) => c.status != 'none').toList();
+                
+                if (!snapshot.hasData || validPeers.isEmpty) {
+                  return Center(
                     child: Column(
                       mainAxisSize: MainAxisSize.min,
                       children: [
@@ -302,123 +392,126 @@ class _PeerPanelState extends State<PeerPanel> {
                         ),
                       ],
                     ),
-                  )
-                : ListView.separated(
-                    padding: EdgeInsets.zero,
-                    itemCount: recipients.length,
-                    separatorBuilder: (_, __) => const Divider(
-                      height: 1,
-                      color: AtNavTheme.borderColor,
-                    ),
-                    itemBuilder: (context, index) {
-                      final peer = recipients[index];
-                      final position = widget.latestPositions[peer];
-                      final hasData = position != null;
+                  );
+                }
 
-                      return Container(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 12,
-                          vertical: 10,
-                        ),
-                        color: AtNavTheme.bgSurface,
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Row(
-                              children: [
-                                Container(
-                                  width: 8,
-                                  height: 8,
-                                  decoration: BoxDecoration(
-                                    color: hasData
-                                        ? AtNavTheme.accentOrange
-                                        : AtNavTheme.fgTertiary,
-                                    shape: BoxShape.circle,
-                                  ),
+                return ListView.separated(
+                  padding: EdgeInsets.zero,
+                  itemCount: validPeers.length,
+                  separatorBuilder: (_, __) => const Divider(
+                    height: 1,
+                    color: AtNavTheme.borderColor,
+                  ),
+                  itemBuilder: (context, index) {
+                    final peerConsent = validPeers[index];
+                    final peer = peerConsent.peerAtsign as String;
+                    final status = peerConsent.status as String;
+                    final outboundPermitted = peerConsent.outboundPermitted as bool;
+                    final position = widget.latestPositions[peer];
+                    final hasData = position != null && status == 'approved';
+
+                    return Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 12,
+                        vertical: 10,
+                      ),
+                      color: AtNavTheme.bgSurface,
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Row(
+                            children: [
+                              Container(
+                                width: 8,
+                                height: 8,
+                                decoration: BoxDecoration(
+                                  color: status == 'approved'
+                                      ? AtNavTheme.terminalGreen
+                                      : AtNavTheme.accentOrange,
+                                  shape: BoxShape.circle,
                                 ),
-                                const SizedBox(width: 8),
-                                Expanded(
-                                  child: Text(
-                                    peer.toUpperCase(),
-                                    style: AtNavTheme.monoData(
-                                      size: 12,
-                                      weight: FontWeight.w700,
-                                    ),
-                                    overflow: TextOverflow.ellipsis,
+                              ),
+                              const SizedBox(width: 8),
+                              Expanded(
+                                child: Text(
+                                  peer.toUpperCase(),
+                                  style: AtNavTheme.monoData(
+                                    size: 12,
+                                    weight: FontWeight.w700,
                                   ),
+                                  overflow: TextOverflow.ellipsis,
                                 ),
+                              ),
+                              if (status == 'approved')
                                 InkWell(
-                                  onTap: () => _removePeer(peer),
-                                  child: Text(
-                                    '[X]',
-                                    style: AtNavTheme.monoData(
-                                      size: 10,
-                                      color: AtNavTheme.accentOrange,
-                                    ),
+                                  onTap: () => widget.onToggleVisibility(peer),
+                                  child: Icon(
+                                    widget.hiddenPeers.contains(peer)
+                                        ? Icons.visibility_off
+                                        : Icons.visibility,
+                                    color: widget.hiddenPeers.contains(peer)
+                                        ? AtNavTheme.fgTertiary
+                                        : AtNavTheme.terminalGreen,
+                                    size: 16,
+                                  ),
+                                ),
+                            ],
+                          ),
+                          const SizedBox(height: 8),
+                          _buildStatusControls(peer, status, outboundPermitted),
+                          if (hasData) ...[
+                            const SizedBox(height: 6),
+                            Row(
+                              mainAxisAlignment:
+                                  MainAxisAlignment.spaceBetween,
+                              children: [
+                                Text(
+                                  'LAT ${position.latitude.toStringAsFixed(6)}',
+                                  style: AtNavTheme.monoData(
+                                    size: 10,
+                                    color: AtNavTheme.fgSecondary,
+                                  ),
+                                ),
+                                Text(
+                                  'LNG ${position.longitude.toStringAsFixed(6)}',
+                                  style: AtNavTheme.monoData(
+                                    size: 10,
+                                    color: AtNavTheme.fgSecondary,
                                   ),
                                 ),
                               ],
                             ),
-                            if (hasData) ...[
-                              const SizedBox(height: 6),
-                              Row(
-                                mainAxisAlignment:
-                                    MainAxisAlignment.spaceBetween,
-                                children: [
-                                  Text(
-                                    'LAT ${position.latitude.toStringAsFixed(6)}',
-                                    style: AtNavTheme.monoData(
-                                      size: 10,
-                                      color: AtNavTheme.fgSecondary,
-                                    ),
+                            const SizedBox(height: 2),
+                            Row(
+                              mainAxisAlignment:
+                                  MainAxisAlignment.spaceBetween,
+                              children: [
+                                Text(
+                                  _timeFormat.format(
+                                    position.timestamp.toLocal(),
                                   ),
-                                  Text(
-                                    'LNG ${position.longitude.toStringAsFixed(6)}',
-                                    style: AtNavTheme.monoData(
-                                      size: 10,
-                                      color: AtNavTheme.fgSecondary,
-                                    ),
+                                  style: AtNavTheme.monoLabel(
+                                    size: 9,
+                                    color: AtNavTheme.fgTertiary,
                                   ),
-                                ],
-                              ),
-                              const SizedBox(height: 2),
-                              Row(
-                                mainAxisAlignment:
-                                    MainAxisAlignment.spaceBetween,
-                                children: [
-                                  Text(
-                                    _timeFormat.format(
-                                      position.timestamp.toLocal(),
-                                    ),
-                                    style: AtNavTheme.monoLabel(
-                                      size: 9,
-                                      color: AtNavTheme.fgTertiary,
-                                    ),
-                                  ),
-                                  Text(
-                                    _formatAge(position.timestamp),
-                                    style: AtNavTheme.monoLabel(
-                                      size: 9,
-                                      color: AtNavTheme.fgTertiary,
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ] else ...[
-                              const SizedBox(height: 4),
-                              Text(
-                                'AWAITING TELEMETRY...',
-                                style: AtNavTheme.monoLabel(
-                                  size: 9,
-                                  color: AtNavTheme.fgTertiary,
                                 ),
-                              ),
-                            ],
+                                Text(
+                                  _formatAge(position.timestamp),
+                                  style: AtNavTheme.monoLabel(
+                                    size: 9,
+                                    color: AtNavTheme.fgTertiary,
+                                  ),
+                                ),
+                              ],
+                            ),
                           ],
-                        ),
-                      );
-                    },
-                  ),
+                        ],
+                      ),
+                    );
+                  },
+                );
+              },
+            ),
           ),
         ],
       ),
