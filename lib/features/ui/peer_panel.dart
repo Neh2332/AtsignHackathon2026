@@ -37,6 +37,7 @@ class PeerPanel extends StatefulWidget {
     required this.hiddenPeers,
     required this.onToggleVisibility,
     this.scrollController,
+    this.headerWidget,
   });
 
   @override
