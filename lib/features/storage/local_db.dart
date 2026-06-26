@@ -80,7 +80,7 @@ class LocalDb extends _$LocalDb {
   }
 
   @override
-  int get schemaVersion => 3;
+  int get schemaVersion => 4;
 
   @override
   MigrationStrategy get migration {
