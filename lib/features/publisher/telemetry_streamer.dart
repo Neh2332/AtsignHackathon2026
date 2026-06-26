@@ -7,6 +7,7 @@ import 'package:geolocator/geolocator.dart';
 import '../../core/at_service.dart';
 import '../../core/constants.dart';
 import '../../models/telemetry_point.dart';
+import '../storage/local_db.dart';
 
 /// The publishing pipeline for location telemetry.
 ///
@@ -25,9 +26,11 @@ import '../../models/telemetry_point.dart';
 ///   independently.
 class TelemetryStreamer extends ChangeNotifier {
   final AtService _atService;
+  final LocalDb _localDb;
 
   Timer? _streamTimer;
   StreamSubscription<Position>? _positionSubscription;
+  StreamSubscription<dynamic>? _consentSubscription;
   bool _isStreaming = false;
   Position? _lastPosition;
   DateTime? _lastBroadcastTime;
@@ -36,7 +39,18 @@ class TelemetryStreamer extends ChangeNotifier {
   /// The set of peer atSigns currently receiving location updates.
   final Set<String> _recipients = {};
 
-  TelemetryStreamer(this._atService);
+  TelemetryStreamer(this._atService, this._localDb) {
+    // Automatically update the recipient list based on DB consent status
+    _consentSubscription = _localDb.watchConsents().listen((consents) {
+      _recipients.clear();
+      for (final consent in consents) {
+        if (consent.status == 'approved' && consent.outboundPermitted == true) {
+          _recipients.add(consent.peerAtsign);
+        }
+      }
+      notifyListeners();
+    });
+  }
 
   // ── Public Getters ─────────────────────────────────────────────────────────
 
@@ -48,25 +62,8 @@ class TelemetryStreamer extends ChangeNotifier {
 
   // ── Recipient Management ───────────────────────────────────────────────────
 
-  /// Adds a peer atSign to the broadcast list.
-  void addRecipient(String atSign) {
-    final normalized = _normalizeAtSign(atSign);
-    _recipients.add(normalized);
-    notifyListeners();
-  }
-
-  /// Removes a peer atSign from the broadcast list.
-  void removeRecipient(String atSign) {
-    final normalized = _normalizeAtSign(atSign);
-    _recipients.remove(normalized);
-    notifyListeners();
-  }
-
-  /// Clears all recipients.
-  void clearRecipients() {
-    _recipients.clear();
-    notifyListeners();
-  }
+  /// Note: Recipients are now managed automatically via LocalDb consent status.
+  /// Adding/removing peers should be done by requesting/revoking consent in AtService.
 
   // ── Streaming Control ──────────────────────────────────────────────────────
 
@@ -232,17 +229,11 @@ class TelemetryStreamer extends ChangeNotifier {
     return true;
   }
 
-  /// Normalizes an atSign string (ensures `@` prefix).
-  String _normalizeAtSign(String atSign) {
-    if (!atSign.startsWith('@')) {
-      return '@$atSign';
-    }
-    return atSign;
-  }
 
   @override
   void dispose() {
     stopStreaming();
+    _consentSubscription?.cancel();
     super.dispose();
   }
 }
