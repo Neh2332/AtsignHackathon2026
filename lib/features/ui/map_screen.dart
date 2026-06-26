@@ -14,19 +14,14 @@ import 'peer_panel.dart';
 import 'telemetry_ticker.dart';
 import 'theme.dart';
 
-/// Main map screen with split-pane desktop layout.
+/// Main map screen with mobile-first full-screen layout.
 ///
 /// Layout:
-/// - Left panel (30%): Peer management sidebar
-/// - Right panel (70%): Full-bleed flutter_map with OSM dark tiles
-/// - Bottom bar: Real-time telemetry data ticker
-///
-/// Design: Tactical Telemetry industrial brutalist with:
-/// - Dark-mode OSM tile layer
-/// - Animated peer pins with pulsing red halos
-/// - Polyline trails with decreasing opacity
-/// - CRT scanline overlay
-/// - ASCII-framed status indicators
+/// - Full-screen flutter_map with CartoDB light tiles
+/// - Floating AppBar with status indicators
+/// - DraggableScrollableSheet for peer management (slides up from bottom)
+/// - Animated peer pins with pulsing halos and name tags
+/// - Polyline trails for each tracked peer
 class MapScreen extends StatefulWidget {
   const MapScreen({super.key});
 
@@ -60,6 +55,10 @@ class _MapScreenState extends State<MapScreen> with TickerProviderStateMixin {
   late final AnimationController _pulseController;
   late final Animation<double> _pulseAnimation;
 
+  // Sheet controller to programmatically expand/collapse the peer panel
+  final DraggableScrollableController _sheetController =
+      DraggableScrollableController();
+
   @override
   void initState() {
     super.initState();
@@ -81,7 +80,6 @@ class _MapScreenState extends State<MapScreen> with TickerProviderStateMixin {
         setState(() {
           _latestPositions = positions;
         });
-        // Load trails for each peer
         for (final peer in positions.keys) {
           _loadTrail(peer);
         }
@@ -134,6 +132,7 @@ class _MapScreenState extends State<MapScreen> with TickerProviderStateMixin {
     _streamer.dispose();
     _listener.dispose();
     _localDb.stopEvictionLoop();
+    _sheetController.dispose();
     super.dispose();
   }
 
@@ -152,122 +151,105 @@ class _MapScreenState extends State<MapScreen> with TickerProviderStateMixin {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: AtNavTheme.bgPrimary,
-      body: Column(
+      // ── Mobile AppBar ──────────────────────────────────────────────────────
+      appBar: PreferredSize(
+        preferredSize: const Size.fromHeight(52),
+        child: _buildMobileAppBar(),
+      ),
+      body: Stack(
         children: [
-          // ── Top Status Bar ───────────────────────────────────────────
-          _buildTopBar(),
+          // ── Full-screen Map ──────────────────────────────────────────────
+          _buildMap(),
 
-          // ── Main Content (Split Pane) ────────────────────────────────
-          Expanded(
-            child: Row(
-              children: [
-                // Left Panel: Peer Management (30%)
-                SizedBox(
-                  width: MediaQuery.of(context).size.width *
-                      AppConstants.sidebarWidthRatio,
-                  child: PeerPanel(
-                    streamer: _streamer,
-                    listener: _listener,
-                    latestPositions: _latestPositions,
-                    hiddenPeers: _hiddenPeers,
-                    onToggleVisibility: _togglePeerVisibility,
-                  ),
-                ),
+          // ── Map Overlay (Peer coords, top-right) ────────────────────────
+          _buildMapOverlay(),
 
-                // Vertical Divider
-                Container(
-                  width: 1,
-                  color: AtNavTheme.borderColor,
-                ),
-
-                // Right Panel: Map (70%)
-                Expanded(
-                  child: Stack(
-                    children: [
-                      _buildMap(),
-                      AtNavTheme.scanlineOverlay(),
-                      _buildMapOverlay(),
-                    ],
-                  ),
-                ),
-              ],
-            ),
+          // ── Real-time telemetry ticker (bottom strip) ────────────────────
+          Positioned(
+            left: 0,
+            right: 0,
+            bottom: MediaQuery.of(context).size.height * 0.15 + 8,
+            child: TelemetryTicker(listener: _listener),
           ),
 
-          // ── Bottom Ticker ────────────────────────────────────────────
-          TelemetryTicker(listener: _listener),
+          // ── Peer Management Bottom Sheet ─────────────────────────────────
+          DraggableScrollableSheet(
+            controller: _sheetController,
+            initialChildSize: 0.12,
+            minChildSize: 0.08,
+            maxChildSize: 0.75,
+            snap: true,
+            snapSizes: const [0.12, 0.45, 0.75],
+            builder: (context, scrollController) {
+              return _buildPeerSheet(scrollController);
+            },
+          ),
         ],
       ),
     );
   }
 
-  /// Top navigation bar with system status.
-  Widget _buildTopBar() {
-    return Container(
-      height: 32,
-      padding: const EdgeInsets.symmetric(horizontal: 16),
-      decoration: const BoxDecoration(
-        color: AtNavTheme.bgElevated,
-        border: Border(
-          bottom: BorderSide(color: AtNavTheme.borderColor, width: 1),
-        ),
-      ),
-      child: Row(
+  /// Mobile AppBar with AtNav branding and connection status.
+  Widget _buildMobileAppBar() {
+    final isOnline = AtService.instance.isAuthenticated;
+    return AppBar(
+      backgroundColor: AtNavTheme.bgPrimary,
+      elevation: 0,
+      titleSpacing: 16,
+      title: Row(
         children: [
           Text(
-            'AtNav /// TACTICAL LOCATION SYSTEM',
-            style: AtNavTheme.monoLabel(
-              size: 9,
-              color: AtNavTheme.fgTertiary,
+            'AtNav',
+            style: AtNavTheme.macroHeader(20),
+          ),
+          const SizedBox(width: 8),
+          Container(
+            width: 6,
+            height: 6,
+            decoration: BoxDecoration(
+              color: isOnline
+                  ? AtNavTheme.terminalGreen
+                  : AtNavTheme.accentOrange,
+              shape: BoxShape.circle,
             ),
           ),
-          const Spacer(),
-          Text(
-            'PEERS: ${_latestPositions.length}',
-            style: AtNavTheme.monoData(
-              size: 9,
-              color: AtNavTheme.fgSecondary,
-            ),
-          ),
-          const SizedBox(width: 16),
-          Text(
-            'E2E: AES-256',
-            style: AtNavTheme.monoData(
-              size: 9,
-              color: AtNavTheme.fgTertiary,
-            ),
-          ),
-          const SizedBox(width: 16),
-          Row(
+        ],
+      ),
+      actions: [
+        Padding(
+          padding: const EdgeInsets.only(right: 16),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            crossAxisAlignment: CrossAxisAlignment.end,
             children: [
-              Container(
-                width: 6,
-                height: 6,
-                decoration: BoxDecoration(
-                  color: AtService.instance.isAuthenticated
-                      ? AtNavTheme.terminalGreen
-                      : AtNavTheme.accentOrange,
-                  shape: BoxShape.circle,
-                ),
-              ),
-              const SizedBox(width: 6),
               Text(
-                AtService.instance.isAuthenticated ? 'ONLINE' : 'OFFLINE',
+                isOnline ? 'ONLINE' : 'OFFLINE',
                 style: AtNavTheme.monoData(
                   size: 9,
-                  color: AtService.instance.isAuthenticated
+                  color: isOnline
                       ? AtNavTheme.terminalGreen
                       : AtNavTheme.accentOrange,
+                ),
+              ),
+              Text(
+                'PEERS: ${_latestPositions.length}',
+                style: AtNavTheme.monoData(
+                  size: 9,
+                  color: AtNavTheme.fgTertiary,
                 ),
               ),
             ],
           ),
-        ],
+        ),
+      ],
+      bottom: PreferredSize(
+        preferredSize: const Size.fromHeight(1),
+        child: Container(height: 1, color: AtNavTheme.borderColor),
       ),
     );
   }
 
-  /// Builds the flutter_map widget with dark OSM tiles.
+  /// Builds the flutter_map widget with CartoDB light tiles.
   Widget _buildMap() {
     return FlutterMap(
       mapController: _mapController,
@@ -305,9 +287,6 @@ class _MapScreenState extends State<MapScreen> with TickerProviderStateMixin {
   }
 
   /// Builds polyline trails for all tracked peers.
-  ///
-  /// Each trail is rendered as a semi-transparent red path.
-  /// Older segments have lower opacity to create a fade-out effect.
   List<Polyline> _buildTrailPolylines() {
     final List<Polyline> polylines = [];
 
@@ -316,7 +295,6 @@ class _MapScreenState extends State<MapScreen> with TickerProviderStateMixin {
       final trail = entry.value;
       if (trail.length < 2) continue;
 
-      // Convert trail points to LatLng list (reversed to oldest→newest)
       final points = trail.reversed
           .map((p) => LatLng(p.latitude, p.longitude))
           .toList();
@@ -356,14 +334,17 @@ class _MapScreenState extends State<MapScreen> with TickerProviderStateMixin {
                   mainAxisSize: MainAxisSize.min,
                   children: [
                     Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 6, vertical: 2),
                       decoration: BoxDecoration(
                         color: AtNavTheme.bgElevated.withValues(alpha: 0.8),
-                        border: Border.all(color: AtNavTheme.terminalGreen, width: 1),
+                        border:
+                            Border.all(color: AtNavTheme.terminalGreen, width: 1),
                       ),
                       child: Text(
                         'SELF',
-                        style: AtNavTheme.monoData(size: 10, color: AtNavTheme.terminalGreen),
+                        style: AtNavTheme.monoData(
+                            size: 10, color: AtNavTheme.terminalGreen),
                       ),
                     ),
                     Container(
@@ -380,7 +361,6 @@ class _MapScreenState extends State<MapScreen> with TickerProviderStateMixin {
                   return Stack(
                     alignment: Alignment.center,
                     children: [
-                      // Pulsing halo (Green for self)
                       Container(
                         width: 32 * _pulseAnimation.value,
                         height: 32 * _pulseAnimation.value,
@@ -391,7 +371,6 @@ class _MapScreenState extends State<MapScreen> with TickerProviderStateMixin {
                           shape: BoxShape.circle,
                         ),
                       ),
-                      // Outer ring
                       Container(
                         width: 16,
                         height: 16,
@@ -404,7 +383,6 @@ class _MapScreenState extends State<MapScreen> with TickerProviderStateMixin {
                           ),
                         ),
                       ),
-                      // Inner dot
                       Container(
                         width: 8,
                         height: 8,
@@ -443,14 +421,17 @@ class _MapScreenState extends State<MapScreen> with TickerProviderStateMixin {
                   mainAxisSize: MainAxisSize.min,
                   children: [
                     Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 6, vertical: 2),
                       decoration: BoxDecoration(
                         color: AtNavTheme.bgElevated.withValues(alpha: 0.8),
-                        border: Border.all(color: AtNavTheme.accentOrange, width: 1),
+                        border: Border.all(
+                            color: AtNavTheme.accentOrange, width: 1),
                       ),
                       child: Text(
                         entry.key.toUpperCase(),
-                        style: AtNavTheme.monoData(size: 10, color: AtNavTheme.accentOrange),
+                        style: AtNavTheme.monoData(
+                            size: 10, color: AtNavTheme.accentOrange),
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
                       ),
@@ -469,7 +450,6 @@ class _MapScreenState extends State<MapScreen> with TickerProviderStateMixin {
                   return Stack(
                     alignment: Alignment.center,
                     children: [
-                      // Pulsing halo
                       Container(
                         width: 32 * _pulseAnimation.value,
                         height: 32 * _pulseAnimation.value,
@@ -480,7 +460,6 @@ class _MapScreenState extends State<MapScreen> with TickerProviderStateMixin {
                           shape: BoxShape.circle,
                         ),
                       ),
-                      // Outer ring
                       Container(
                         width: 16,
                         height: 16,
@@ -493,7 +472,6 @@ class _MapScreenState extends State<MapScreen> with TickerProviderStateMixin {
                           ),
                         ),
                       ),
-                      // Inner dot
                       Container(
                         width: 8,
                         height: 8,
@@ -515,75 +493,107 @@ class _MapScreenState extends State<MapScreen> with TickerProviderStateMixin {
     return markers;
   }
 
-  /// Builds the map overlay with coordinate readouts and crosshairs.
+  /// Map overlay with active peer coordinate readouts.
   Widget _buildMapOverlay() {
+    if (_latestPositions.isEmpty) return const SizedBox.shrink();
+
     return Positioned(
       top: 12,
       right: 12,
       child: Container(
         padding: const EdgeInsets.all(10),
         decoration: BoxDecoration(
-          color: AtNavTheme.bgPrimary.withValues(alpha: 0.85),
+          color: AtNavTheme.bgPrimary.withValues(alpha: 0.9),
           border: Border.all(color: AtNavTheme.borderColor, width: 1),
+          borderRadius: BorderRadius.circular(6),
         ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.end,
           mainAxisSize: MainAxisSize.min,
           children: [
             Text(
-              AtNavTheme.asciiFrame('MAP CONTROL'),
+              'LIVE SIGNALS',
               style: AtNavTheme.monoLabel(
                 size: 8,
                 color: AtNavTheme.accentOrange,
               ),
             ),
             const SizedBox(height: 6),
-            if (_latestPositions.isEmpty)
-              Text(
-                'NO ACTIVE SIGNALS',
-                style: AtNavTheme.monoData(
-                  size: 9,
-                  color: AtNavTheme.fgTertiary,
-                ),
-              )
-            else
-              ..._latestPositions.entries.map((entry) {
-                return Padding(
-                  padding: const EdgeInsets.only(bottom: 4),
-                  child: InkWell(
-                    onTap: () => _centerOnPeer(entry.key),
-                    child: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Container(
-                          width: 6,
-                          height: 6,
+            ..._latestPositions.entries.map((entry) {
+              return Padding(
+                padding: const EdgeInsets.only(bottom: 4),
+                child: GestureDetector(
+                  onTap: () => _centerOnPeer(entry.key),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Container(
+                        width: 6,
+                        height: 6,
+                        color: AtNavTheme.accentOrange,
+                      ),
+                      const SizedBox(width: 6),
+                      Text(
+                        entry.key.toUpperCase(),
+                        style: AtNavTheme.monoData(
+                          size: 9,
                           color: AtNavTheme.accentOrange,
                         ),
-                        const SizedBox(width: 6),
-                        Text(
-                          entry.key.toUpperCase(),
-                          style: AtNavTheme.monoData(
-                            size: 9,
-                            color: AtNavTheme.accentOrange,
-                          ),
-                        ),
-                        const SizedBox(width: 8),
-                        Text(
-                          '${entry.value.latitude.toStringAsFixed(4)}, '
-                          '${entry.value.longitude.toStringAsFixed(4)}',
-                          style: AtNavTheme.monoData(
-                            size: 9,
-                            color: AtNavTheme.fgSecondary,
-                          ),
-                        ),
-                      ],
-                    ),
+                      ),
+                    ],
                   ),
-                );
-              }),
+                ),
+              );
+            }),
           ],
         ),
+      ),
+    );
+  }
+
+  /// Peer management bottom sheet — replaces the desktop sidebar.
+  Widget _buildPeerSheet(ScrollController scrollController) {
+    return Container(
+      decoration: BoxDecoration(
+        color: AtNavTheme.bgPrimary,
+        border: const Border(
+          top: BorderSide(color: AtNavTheme.accentOrange, width: 2),
+        ),
+        borderRadius: const BorderRadius.vertical(top: Radius.circular(12)),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.08),
+            blurRadius: 12,
+            offset: const Offset(0, -4),
+          ),
+        ],
+      ),
+      child: Column(
+        children: [
+          // Drag handle
+          Padding(
+            padding: const EdgeInsets.symmetric(vertical: 10),
+            child: Container(
+              width: 40,
+              height: 4,
+              decoration: BoxDecoration(
+                color: AtNavTheme.borderColor,
+                borderRadius: BorderRadius.circular(2),
+              ),
+            ),
+          ),
+          // Peer panel scrolls inside the sheet
+          Expanded(
+            child: PeerPanel(
+              streamer: _streamer,
+              listener: _listener,
+              latestPositions: _latestPositions,
+              hiddenPeers: _hiddenPeers,
+              onToggleVisibility: _togglePeerVisibility,
+              scrollController: scrollController,
+            ),
+          ),
+        ],
       ),
     );
   }
