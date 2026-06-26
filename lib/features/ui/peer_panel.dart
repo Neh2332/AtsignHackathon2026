@@ -147,7 +147,7 @@ class _PeerPanelState extends State<PeerPanel> {
                 borderRadius: BorderRadius.circular(12),
               ),
               child: Text(
-                outboundPermitted ? 'TX ON' : 'TX OFF',
+                outboundPermitted ? 'BROADCAST: ON' : 'BROADCAST: OFF',
                 style: AtNavTheme.monoData(
                   size: 9,
                   color: outboundPermitted ? AtNavTheme.terminalGreen : AtNavTheme.fgTertiary,
