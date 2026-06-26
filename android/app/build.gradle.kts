@@ -51,6 +51,20 @@ tasks.whenTaskAdded {
                 from("C:/temp/AtNavBuild/app/outputs/flutter-apk/")
                 into(File(projectDir, "../../build/app/outputs/flutter-apk/"))
             }
+            copy {
+                from("C:/temp/AtNavBuild/app/outputs/flutter-apk/")
+                into(File(projectDir, "../../build/app/outputs/apk/debug/"))
+            }
+            copy {
+                from("C:/temp/AtNavBuild/app/outputs/flutter-apk/app-debug.apk")
+                into(File(projectDir, "../../build/app/outputs/flutter-apk/"))
+                rename("app-debug.apk", "app.apk")
+            }
+            copy {
+                from("C:/temp/AtNavBuild/app/outputs/flutter-apk/app-debug.apk")
+                into(File(projectDir, "../../build/app/outputs/apk/debug/"))
+                rename("app-debug.apk", "app.apk")
+            }
         }
     }
 }
