@@ -132,9 +132,20 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(
-                    'AtNav',
-                    style: AtNavTheme.macroHeader(40),
+                  Row(
+                    crossAxisAlignment: CrossAxisAlignment.center,
+                    children: [
+                      const Icon(
+                        Icons.location_on,
+                        color: AtNavTheme.accentOrange,
+                        size: 36,
+                      ),
+                      const SizedBox(width: 8),
+                      Text(
+                        'AtNav',
+                        style: AtNavTheme.macroHeader(40),
+                      ),
+                    ],
                   ),
                   const SizedBox(height: 6),
                   Text(
@@ -198,8 +209,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                     // the input row.  We achieve this by placing it inside
                     // an IntrinsicHeight Row so it can align Alignment.center
                     // regardless of the input's dynamic height.
-                    SizedBox(
-                      height: 56,
+                    IntrinsicHeight(
                       child: Row(
                         crossAxisAlignment: CrossAxisAlignment.stretch,
                         children: [

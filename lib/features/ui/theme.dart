@@ -259,4 +259,43 @@ class AtNavTheme {
   static Widget scanlineOverlay() {
     return const SizedBox.shrink();
   }
+
+  // ── Responsive Utilities ───────────────────────────────────────────────────
+
+  /// Normalised scale factor driven by current screen width.
+  ///
+  /// | Width      | Factor |
+  /// |------------|--------|
+  /// | < 360 px   |  0.85  |
+  /// | 360–599 px |  1.00  |
+  /// | 600–799 px |  1.12  |
+  /// | ≥ 800 px   |  1.25  |
+  static double scaleOf(BuildContext context) {
+    final double w = MediaQuery.sizeOf(context).width;
+    if (w < 360) return 0.85;
+    if (w < 600) return 1.00;
+    if (w < 800) return 1.12;
+    return 1.25;
+  }
+
+  /// `true` on tablet-width (≥ 600 px) and desktop screens.
+  static bool isWide(BuildContext context) =>
+      MediaQuery.sizeOf(context).width >= 600;
+
+  /// Horizontal edge padding that breathes with screen width.
+  static double hPad(BuildContext context) {
+    final double w = MediaQuery.sizeOf(context).width;
+    if (w < 360) return 14;
+    if (w < 600) return 20;
+    if (w < 800) return 28;
+    return 36;
+  }
+
+  /// Standard height for tappable controls (buttons, inputs).
+  static double controlHeight(BuildContext context) {
+    final double w = MediaQuery.sizeOf(context).width;
+    if (w < 360) return 44;
+    if (w < 600) return 52;
+    return 56;
+  }
 }
