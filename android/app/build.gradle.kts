@@ -42,3 +42,15 @@ android {
 flutter {
     source = "../.."
 }
+
+tasks.whenTaskAdded {
+    val taskName = name
+    if (taskName.startsWith("assemble")) {
+        doLast {
+            copy {
+                from("C:/temp/AtNavBuild/app/outputs/flutter-apk/")
+                into(File(projectDir, "../../build/app/outputs/flutter-apk/"))
+            }
+        }
+    }
+}
