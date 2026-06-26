@@ -85,6 +85,20 @@ class _PeerPanelState extends State<PeerPanel> {
               height: 48,
               child: ElevatedButton(
                 onPressed: () {
+                  AtService.instance.revokeConsent(peer);
+                  LocalDb.instance.updateConsentStatus(peer, 'none');
+                },
+                style: AtNavTheme.primaryButton(isDestructive: true),
+                child: Text('REJECT', style: AtNavTheme.monoData(size: 10)),
+              ),
+            ),
+          ),
+          const SizedBox(width: 8),
+          Expanded(
+            child: SizedBox(
+              height: 48,
+              child: ElevatedButton(
+                onPressed: () {
                   AtService.instance.acceptConsentRequest(peer);
                   LocalDb.instance.updateConsentStatus(peer, 'approved');
                 },
@@ -97,20 +111,6 @@ class _PeerPanelState extends State<PeerPanel> {
                   foregroundColor: WidgetStateProperty.all(Colors.white),
                 ),
                 child: Text('ACCEPT', style: AtNavTheme.monoData(size: 10)),
-              ),
-            ),
-          ),
-          const SizedBox(width: 8),
-          Expanded(
-            child: SizedBox(
-              height: 48,
-              child: ElevatedButton(
-                onPressed: () {
-                  AtService.instance.revokeConsent(peer);
-                  LocalDb.instance.updateConsentStatus(peer, 'none');
-                },
-                style: AtNavTheme.primaryButton(isDestructive: true),
-                child: Text('REJECT', style: AtNavTheme.monoData(size: 10)),
               ),
             ),
           ),
