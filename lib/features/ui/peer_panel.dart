@@ -389,26 +389,29 @@ class _PeerPanelState extends State<PeerPanel> {
                 final validPeers = consents.where((c) => c.status != 'none').toList();
                 
                 if (!snapshot.hasData || validPeers.isEmpty) {
-                  return Center(
-                    child: Column(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Text(
-                          '< NO PEERS >',
-                          style: AtNavTheme.monoData(
-                            size: 12,
-                            color: AtNavTheme.fgTertiary,
+                  return Padding(
+                    padding: const EdgeInsets.only(top: 24.0, bottom: 24.0),
+                    child: Center(
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Text(
+                            '< NO PEERS >',
+                            style: AtNavTheme.monoData(
+                              size: 12,
+                              color: AtNavTheme.fgTertiary,
+                            ),
                           ),
-                        ),
-                        const SizedBox(height: 4),
-                        Text(
-                          'ADD AN ATSIGN TO BEGIN SHARING',
-                          style: AtNavTheme.monoLabel(
-                            size: 9,
-                            color: AtNavTheme.fgTertiary,
+                          const SizedBox(height: 4),
+                          Text(
+                            'ADD AN ATSIGN TO BEGIN SHARING',
+                            style: AtNavTheme.monoLabel(
+                              size: 9,
+                              color: AtNavTheme.fgTertiary,
+                            ),
                           ),
-                        ),
-                      ],
+                        ],
+                      ),
                     ),
                   );
                 }
