@@ -88,7 +88,14 @@ class _PeerPanelState extends State<PeerPanel> {
                   AtService.instance.acceptConsentRequest(peer);
                   LocalDb.instance.updateConsentStatus(peer, 'approved');
                 },
-                style: AtNavTheme.primaryButton(),
+                style: AtNavTheme.primaryButton().copyWith(
+                  backgroundColor: WidgetStateProperty.resolveWith((states) {
+                    if (states.contains(WidgetState.disabled)) return AtNavTheme.bgElevated;
+                    if (states.contains(WidgetState.pressed)) return const Color(0xFFE04900);
+                    return AtNavTheme.accentOrange;
+                  }),
+                  foregroundColor: WidgetStateProperty.all(Colors.white),
+                ),
                 child: Text('ACCEPT', style: AtNavTheme.monoData(size: 10)),
               ),
             ),
