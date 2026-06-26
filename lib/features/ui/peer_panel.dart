@@ -474,18 +474,26 @@ class _PeerPanelState extends State<PeerPanel> {
                               mainAxisAlignment:
                                   MainAxisAlignment.spaceBetween,
                               children: [
-                                Text(
-                                  'LAT ${position.latitude.toStringAsFixed(6)}',
-                                  style: AtNavTheme.monoData(
-                                    size: 10,
-                                    color: AtNavTheme.fgSecondary,
+                                Flexible(
+                                  child: Text(
+                                    'LAT ${position.latitude.toStringAsFixed(6)}',
+                                    style: AtNavTheme.monoData(
+                                      size: 10,
+                                      color: AtNavTheme.fgSecondary,
+                                    ),
+                                    overflow: TextOverflow.ellipsis,
                                   ),
                                 ),
-                                Text(
-                                  'LNG ${position.longitude.toStringAsFixed(6)}',
-                                  style: AtNavTheme.monoData(
-                                    size: 10,
-                                    color: AtNavTheme.fgSecondary,
+                                const SizedBox(width: 8),
+                                Flexible(
+                                  child: Text(
+                                    'LNG ${position.longitude.toStringAsFixed(6)}',
+                                    style: AtNavTheme.monoData(
+                                      size: 10,
+                                      color: AtNavTheme.fgSecondary,
+                                    ),
+                                    overflow: TextOverflow.ellipsis,
+                                    textAlign: TextAlign.right,
                                   ),
                                 ),
                               ],

@@ -282,10 +282,10 @@ class _MapScreenState extends State<MapScreen> with TickerProviderStateMixin {
           _buildMap(),
 
           // ── Map Overlay (Peer coords, top-right) ────────────────────
-          SafeArea(child: _buildMapOverlay()),
+          _buildMapOverlay(useSafeArea: true),
 
           // ── Zoom Controls ──────────────────────────────────────────────
-          SafeArea(child: _buildZoomControls(isMobile: true)),
+          _buildZoomControls(isMobile: true, useSafeArea: true),
 
           // ── Peer Management Bottom Sheet ─────────────────────────────
           DraggableScrollableSheet(
@@ -453,6 +453,7 @@ class _MapScreenState extends State<MapScreen> with TickerProviderStateMixin {
       ],
     );
   }
+
 
   /// Builds polyline trails for all tracked peers.
   List<Polyline> _buildTrailPolylines() {
@@ -662,14 +663,11 @@ class _MapScreenState extends State<MapScreen> with TickerProviderStateMixin {
   }
 
   /// Map overlay with active peer coordinate readouts (top-right corner).
-  Widget _buildMapOverlay() {
+  Widget _buildMapOverlay({bool useSafeArea = false}) {
     if (_latestPositions.isEmpty) return const SizedBox.shrink();
 
-    return Positioned(
-      top: 12,
-      right: 12,
-      child: Container(
-        padding: const EdgeInsets.all(10),
+    Widget content = Container(
+      padding: const EdgeInsets.all(10),
         decoration: BoxDecoration(
           color: AtNavTheme.bgPrimary.withValues(alpha: 0.9),
           border: Border.all(color: AtNavTheme.borderColor, width: 1),
@@ -715,30 +713,45 @@ class _MapScreenState extends State<MapScreen> with TickerProviderStateMixin {
             }),
           ],
         ),
-      ),
+      );
+
+    if (useSafeArea) {
+      content = SafeArea(child: content);
+    }
+
+    return Positioned(
+      top: 12,
+      right: 12,
+      child: content,
     );
   }
 
   // ── Zoom Controls ────────────────────────────────────────────────────────
   
-  Widget _buildZoomControls({required bool isMobile}) {
+  Widget _buildZoomControls({required bool isMobile, bool useSafeArea = false}) {
+    Widget content = Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        _zoomButton(Icons.add, () {
+          final z = _mapController.camera.zoom;
+          _mapController.move(_mapController.camera.center, z + 1);
+        }),
+        const SizedBox(height: 12),
+        _zoomButton(Icons.remove, () {
+          final z = _mapController.camera.zoom;
+          _mapController.move(_mapController.camera.center, z - 1);
+        }),
+      ],
+    );
+
+    if (useSafeArea) {
+      content = SafeArea(child: content);
+    }
+
     return Positioned(
       right: 16,
       bottom: isMobile ? 120 : 32, 
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          _zoomButton(Icons.add, () {
-            final z = _mapController.camera.zoom;
-            _mapController.move(_mapController.camera.center, z + 1);
-          }),
-          const SizedBox(height: 12),
-          _zoomButton(Icons.remove, () {
-            final z = _mapController.camera.zoom;
-            _mapController.move(_mapController.camera.center, z - 1);
-          }),
-        ],
-      ),
+      child: content,
     );
   }
 
