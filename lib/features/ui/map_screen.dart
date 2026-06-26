@@ -11,7 +11,6 @@ import '../publisher/telemetry_streamer.dart';
 import '../subscriber/telemetry_listener.dart';
 import '../storage/local_db.dart';
 import 'peer_panel.dart';
-import 'telemetry_ticker.dart';
 import 'theme.dart';
 
 /// Main map screen with adaptive layout.
@@ -202,15 +201,13 @@ class _MapScreenState extends State<MapScreen> with TickerProviderStateMixin {
                     children: [
                       _buildMap(),
                       _buildMapOverlay(),
+                      _buildZoomControls(isMobile: false),
                     ],
                   ),
                 ),
               ],
             ),
           ),
-
-          // ── Bottom Ticker ────────────────────────────────────────────
-          TelemetryTicker(listener: _listener),
         ],
       ),
     );
@@ -285,15 +282,10 @@ class _MapScreenState extends State<MapScreen> with TickerProviderStateMixin {
           _buildMap(),
 
           // ── Map Overlay (Peer coords, top-right) ────────────────────
-          _buildMapOverlay(),
+          SafeArea(child: _buildMapOverlay()),
 
-          // ── Real-time telemetry ticker (bottom strip) ────────────────
-          Positioned(
-            left: 0,
-            right: 0,
-            bottom: MediaQuery.of(context).size.height * 0.15 + 8,
-            child: TelemetryTicker(listener: _listener),
-          ),
+          // ── Zoom Controls ──────────────────────────────────────────────
+          SafeArea(child: _buildZoomControls(isMobile: true)),
 
           // ── Peer Management Bottom Sheet ─────────────────────────────
           DraggableScrollableSheet(
@@ -374,21 +366,24 @@ class _MapScreenState extends State<MapScreen> with TickerProviderStateMixin {
 
   /// Mobile peer sheet that slides up from the bottom.
   Widget _buildPeerSheet(ScrollController scrollController) {
-    return Container(
-      decoration: BoxDecoration(
-        color: AtNavTheme.bgPrimary,
-        border: const Border(
-          top: BorderSide(color: AtNavTheme.accentOrange, width: 2),
-        ),
-        borderRadius: const BorderRadius.vertical(top: Radius.circular(12)),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.08),
-            blurRadius: 12,
-            offset: const Offset(0, -4),
+    return SafeArea(
+      bottom: true,
+      top: false,
+      child: Container(
+        decoration: BoxDecoration(
+          color: AtNavTheme.bgPrimary,
+          border: const Border(
+            top: BorderSide(color: AtNavTheme.accentOrange, width: 2),
           ),
-        ],
-      ),
+          borderRadius: const BorderRadius.vertical(top: Radius.circular(12)),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withValues(alpha: 0.08),
+              blurRadius: 12,
+              offset: const Offset(0, -4),
+            ),
+          ],
+        ),
       child: Column(
         children: [
           // Drag handle
@@ -416,7 +411,7 @@ class _MapScreenState extends State<MapScreen> with TickerProviderStateMixin {
           ),
         ],
       ),
-    );
+    ));
   }
 
   // ── Shared Widgets ─────────────────────────────────────────────────────────
@@ -426,6 +421,7 @@ class _MapScreenState extends State<MapScreen> with TickerProviderStateMixin {
     return FlutterMap(
       mapController: _mapController,
       options: MapOptions(
+        interactionOptions: const InteractionOptions(flags: InteractiveFlag.all),
         initialCenter: _latestPositions.isNotEmpty
             ? LatLng(
                 _latestPositions.values.first.latitude,
@@ -719,6 +715,53 @@ class _MapScreenState extends State<MapScreen> with TickerProviderStateMixin {
             }),
           ],
         ),
+      ),
+    );
+  }
+
+  // ── Zoom Controls ────────────────────────────────────────────────────────
+  
+  Widget _buildZoomControls({required bool isMobile}) {
+    return Positioned(
+      right: 16,
+      bottom: isMobile ? 120 : 32, 
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          _zoomButton(Icons.add, () {
+            final z = _mapController.camera.zoom;
+            _mapController.move(_mapController.camera.center, z + 1);
+          }),
+          const SizedBox(height: 12),
+          _zoomButton(Icons.remove, () {
+            final z = _mapController.camera.zoom;
+            _mapController.move(_mapController.camera.center, z - 1);
+          }),
+        ],
+      ),
+    );
+  }
+
+  Widget _zoomButton(IconData icon, VoidCallback onPressed) {
+    return InkWell(
+      onTap: onPressed,
+      borderRadius: BorderRadius.circular(12),
+      child: Container(
+        width: 48,
+        height: 48,
+        decoration: BoxDecoration(
+          color: AtNavTheme.bgSurface.withValues(alpha: 0.95),
+          border: Border.all(color: AtNavTheme.borderColor),
+          borderRadius: BorderRadius.circular(12),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withValues(alpha: 0.08),
+              blurRadius: 8,
+              offset: const Offset(0, 4),
+            )
+          ]
+        ),
+        child: Icon(icon, color: AtNavTheme.fgPrimary),
       ),
     );
   }
