@@ -176,32 +176,36 @@ USER                    AtNav App                 atServer @alice          atDir
   │◄── AUTHENTICATED ──────│                            │                      │
 ```
 
-## 6. Design System: Tactical Telemetry
+## 6. Design System: Clean Orange & White
 
 ### Color Palette
 
 | Token | Hex | Usage |
 |-------|-----|-------|
-| `bgPrimary` | `#0A0A0A` | Deactivated CRT background |
-| `bgSurface` | `#121212` | Card/panel surfaces |
-| `fgPrimary` | `#EAEAEA` | White phosphor text |
-| `fgSecondary` | `#8A8A8A` | Dimmed metadata |
-| `accentRed` | `#E61919` | Aviation/Hazard Red — only accent |
-| `terminalGreen` | `#4AF626` | Live connection status only |
+| `bgPrimary` | `#FFFFFF` | Pure white background |
+| `bgSurface` | `#F9F9F9` | Card and panel surfaces |
+| `bgElevated` | `#F0F0F0` | Elevated compartment backgrounds |
+| `fgPrimary` | `#1A1A1A` | Dark primary text |
+| `fgSecondary` | `#666666` | Dimmed metadata and labels |
+| `fgTertiary` | `#999999` | Muted timestamps and supplementary info |
+| `accentOrange` | `#FF5A00` | Atsign Orange — primary accent, active pins, alerts, dividers |
+| `terminalGreen` | `#34C759` | Live connection status indicator only |
+| `borderColor` | `#E0E0E0` | Compartment edges and structural dividers |
 
 ### Typography
 
 | Scale | Font | Size | Tracking | Usage |
 |-------|------|------|----------|-------|
-| Macro | Archivo Black | 18-36px | -0.04em | Section headers |
-| Micro | JetBrains Mono | 9-14px | +0.08em | All data readouts |
-| Label | JetBrains Mono | 8-10px | +0.1em | Metadata labels |
+| Macro | Inter (700) | 18-36px | -0.02em | Section headers, app title |
+| Micro | Inter (400) | 9-14px | default | All data readouts, coordinates |
+| Label | Inter (600) | 8-10px | +0.05em | Metadata labels, section titles |
 
 ### Layout Rules
 
-- Split-pane: 30% sidebar + 70% map
-- Zero `border-radius` — all corners 90°
-- Visible compartmentalization: `1px solid` dividers
-- Thick red `2px` horizontal rules between zones
-- ASCII-framed headers: `[ SECTION NAME ]`
-- CRT scanline overlay on map surface
+- **Responsive breakpoint**: `800px` — widths ≥ 800px use the desktop layout; below uses mobile layout
+- **Desktop**: 30% persistent peer sidebar + 70% full-bleed map, top status bar, bottom telemetry ticker
+- **Mobile**: Full-screen map, draggable bottom sheet for peer management, mobile AppBar
+- Rounded corners (`border-radius: 6-8px`) for panels, inputs, and buttons
+- `1px solid` borders using `borderColor` for compartmentalization
+- Thick `2px` Atsign Orange horizontal rules between primary zones
+- Section labels styled as uppercase monospaced text (no ASCII brackets)
