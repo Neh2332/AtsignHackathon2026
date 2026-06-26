@@ -193,9 +193,20 @@ class _PeerPanelState extends State<PeerPanel> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(
-                  'AtNav',
-                  style: AtNavTheme.macroHeader(22),
+                Row(
+                  crossAxisAlignment: CrossAxisAlignment.center,
+                  children: [
+                    const Icon(
+                      Icons.location_on,
+                      color: AtNavTheme.accentOrange,
+                      size: 22,
+                    ),
+                    const SizedBox(width: 6),
+                    Text(
+                      'AtNav',
+                      style: AtNavTheme.macroHeader(22),
+                    ),
+                  ],
                 ),
                 const SizedBox(height: 4),
                 Row(
