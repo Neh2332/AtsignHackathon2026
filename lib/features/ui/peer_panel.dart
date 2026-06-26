@@ -26,6 +26,8 @@ class PeerPanel extends StatefulWidget {
   final Function(String) onToggleVisibility;
   /// Optional scroll controller from a DraggableScrollableSheet.
   final ScrollController? scrollController;
+  /// Optional header widget (e.g., drag handle for mobile sheet).
+  final Widget? headerWidget;
 
   const PeerPanel({
     super.key,
