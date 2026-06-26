@@ -100,6 +100,13 @@ CREATE TABLE coordinates (
 );
 
 CREATE INDEX idx_peer_ts ON coordinates(peer_atsign, timestamp DESC);
+
+CREATE TABLE peer_consents (
+  peer_atsign        TEXT    PRIMARY KEY,
+  status             TEXT    DEFAULT 'none',
+  last_updated       TEXT,
+  outbound_permitted BOOLEAN DEFAULT 1
+);
 ```
 
 ### Automatic Eviction Loop
@@ -108,7 +115,6 @@ CREATE INDEX idx_peer_ts ON coordinates(peer_atsign, timestamp DESC);
 |-----------|-------|-------------|
 | `trailRetentionHours` | 24 | Maximum age for cached coordinates |
 | `evictionIntervalMinutes` | 10 | How often the eviction sweep runs |
-| `maxTrailPoints` | 500 | Maximum polyline trail points per peer |
 
 The eviction loop runs as a `Timer.periodic` on the UI isolate (lightweight — a single `DELETE WHERE timestamp < cutoff` query). It runs immediately on startup and then every 10 minutes.
 
