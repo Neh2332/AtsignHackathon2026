@@ -227,6 +227,12 @@ class _MapScreenState extends State<MapScreen> with TickerProviderStateMixin {
       ),
       child: Row(
         children: [
+          const Icon(
+            Icons.location_on,
+            color: AtNavTheme.accentOrange,
+            size: 14,
+          ),
+          const SizedBox(width: 4),
           Text(
             'AtNav',
             style: AtNavTheme.macroHeader(13),
@@ -313,6 +319,12 @@ class _MapScreenState extends State<MapScreen> with TickerProviderStateMixin {
       titleSpacing: 16,
       title: Row(
         children: [
+          const Icon(
+            Icons.location_on,
+            color: AtNavTheme.accentOrange,
+            size: 20,
+          ),
+          const SizedBox(width: 6),
           Text(
             'AtNav',
             style: AtNavTheme.macroHeader(20),
