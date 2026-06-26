@@ -29,6 +29,16 @@ class Coordinates extends Table {
   TextColumn get receivedAt => text()();
 }
 
+class PeerConsents extends Table {
+  TextColumn get peerAtsign => text()();
+  TextColumn get status => text().withDefault(const Constant('none'))();
+  TextColumn get lastUpdated => text()();
+  BoolColumn get outboundPermitted => boolean().withDefault(const Constant(true))();
+
+  @override
+  Set<Column> get primaryKey => {peerAtsign};
+}
+
 /// SQLite database manager for local telemetry coordinate storage.
 ///
 /// This database is the bridge between the Atsign notification pipeline
@@ -41,20 +51,36 @@ class Coordinates extends Table {
 /// Instead, we use short-TTL ephemeral notifications (ttln=60s) that
 /// bypass the server commit log entirely, and persist observations
 /// strictly in this local SQLite database.
-@DriftDatabase(tables: [Coordinates])
+@DriftDatabase(tables: [Coordinates, PeerConsents])
 class LocalDb extends _$LocalDb {
-  LocalDb._() : super(_openConnection());
+  LocalDb._(String atSign) : super(_openConnection(atSign));
 
   static LocalDb? _instance;
 
-  /// Singleton accessor. The database is opened once and reused.
+  /// Singleton accessor. The database must be initialized first.
   static LocalDb get instance {
-    _instance ??= LocalDb._();
+    if (_instance == null) {
+      throw StateError('LocalDb has not been initialized. Call init(atSign) first.');
+    }
     return _instance!;
   }
 
+  /// Initializes the database scoped to a specific atSign.
+  static void init(String atSign) {
+    if (_instance != null) {
+      _instance!.close();
+    }
+    _instance = LocalDb._(atSign);
+  }
+
+  /// Closes the current database instance.
+  static Future<void> closeInstance() async {
+    await _instance?.close();
+    _instance = null;
+  }
+
   @override
-  int get schemaVersion => 1;
+  int get schemaVersion => 3;
 
   @override
   MigrationStrategy get migration {
@@ -66,6 +92,17 @@ class LocalDb extends _$LocalDb {
           'CREATE INDEX IF NOT EXISTS idx_peer_ts '
           'ON coordinates(peer_atsign, timestamp DESC)',
         );
+      },
+      onUpgrade: (Migrator m, int from, int to) async {
+        if (from < 2) {
+          await m.createTable(peerConsents);
+        }
+        if (from < 3) {
+          // Recreate the peerConsents table to safely drop the expiresAt column
+          // and add the new outboundPermitted column.
+          await m.deleteTable('peer_consents');
+          await m.createTable(peerConsents);
+        }
       },
     );
   }
@@ -111,6 +148,8 @@ class LocalDb extends _$LocalDb {
       ),
     );
   }
+
+  // evictExpiredConsents removed as duration is now infinite
 
   /// Purges all coordinate records older than the configured retention period.
   ///
@@ -284,16 +323,43 @@ class LocalDb extends _$LocalDb {
     final row = await query.getSingle();
     return row.read(count) ?? 0;
   }
+
+  // ── Peer Consent Operations ────────────────────────────────────────────────
+
+  /// Updates or inserts a peer's consent status.
+  Future<int> updateConsentStatus(String peerAtSign, String status, {bool? outboundPermitted}) {
+    return into(peerConsents).insertOnConflictUpdate(
+      PeerConsentsCompanion.insert(
+        peerAtsign: peerAtSign,
+        status: Value(status),
+        lastUpdated: DateTime.now().toUtc().toIso8601String(),
+        outboundPermitted: outboundPermitted != null ? Value(outboundPermitted) : const Value.absent(),
+      ),
+    );
+  }
+
+  /// Gets the current consent status of a peer.
+  Future<String> getConsentStatus(String peerAtSign) async {
+    final query = select(peerConsents)..where((c) => c.peerAtsign.equals(peerAtSign));
+    final result = await query.getSingleOrNull();
+    return result?.status ?? 'none';
+  }
+
+  /// Returns a reactive stream of all peer consent records.
+  Stream<List<PeerConsent>> watchConsents() {
+    return select(peerConsents).watch();
+  }
 }
 
 /// Opens the SQLite database connection for the desktop platform.
 ///
 /// The database file is stored in the application support directory
-/// under `AtNav/telemetry.db`.
-LazyDatabase _openConnection() {
+/// under `AtNav/{atSign}/telemetry.db`.
+LazyDatabase _openConnection(String atSign) {
   return LazyDatabase(() async {
     final dir = await getApplicationSupportDirectory();
-    final dbPath = p.join(dir.path, 'AtNav', 'telemetry.db');
+    final safeAtSign = atSign.replaceAll('@', '');
+    final dbPath = p.join(dir.path, 'AtNav', safeAtSign, 'telemetry.db');
     final dbDir = Directory(p.dirname(dbPath));
     if (!dbDir.existsSync()) {
       dbDir.createSync(recursive: true);
