@@ -343,6 +343,15 @@ class LocalDb extends _$LocalDb {
     );
   }
 
+  /// Updates only the display name for a peer.
+  Future<int> updatePeerDisplayName(String peerAtSign, String displayName) {
+    return (update(peerConsents)..where((c) => c.peerAtsign.equals(peerAtSign)))
+        .write(PeerConsentsCompanion(
+      displayName: Value(displayName.isEmpty ? null : displayName),
+      lastUpdated: Value(DateTime.now().toUtc().toIso8601String()),
+    ));
+  }
+
   /// Gets the current consent status of a peer.
   Future<String> getConsentStatus(String peerAtSign) async {
     final query = select(peerConsents)..where((c) => c.peerAtsign.equals(peerAtSign));
