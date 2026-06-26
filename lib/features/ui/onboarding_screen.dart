@@ -110,12 +110,14 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
     return Scaffold(
       backgroundColor: AtNavTheme.bgPrimary,
       body: Center(
-        child: Container(
-          width: 520,
-          decoration: AtNavTheme.panelDecoration(),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.stretch,
+        child: SingleChildScrollView(
+          padding: const EdgeInsets.symmetric(vertical: 24, horizontal: 16),
+          child: Container(
+            constraints: const BoxConstraints(maxWidth: 520),
+            decoration: AtNavTheme.panelDecoration(),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
               // ── Header ──────────────────────────────────────────────
               Container(
@@ -391,6 +393,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
           ),
         ),
       ),
-    );
-  }
+    ),
+  );
+}
 }
