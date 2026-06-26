@@ -126,7 +126,7 @@ class _PeerPanelState extends State<PeerPanel> {
               AtService.instance.revokeConsent(peer);
               LocalDb.instance.updateConsentStatus(peer, 'none');
             },
-            child: Text('[CANCEL]', style: AtNavTheme.monoData(size: 10, color: AtNavTheme.accentOrange)),
+            child: const Icon(Icons.close, size: 20, color: AtNavTheme.accentOrange),
           ),
         ],
       );
