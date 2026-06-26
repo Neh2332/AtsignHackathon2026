@@ -104,6 +104,9 @@ class LocalDb extends _$LocalDb {
           await m.deleteTable('peer_consents');
           await m.createTable(peerConsents);
         }
+        if (from < 4) {
+          await m.addColumn(peerConsents, peerConsents.displayName);
+        }
       },
     );
   }
