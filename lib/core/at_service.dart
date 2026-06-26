@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:convert';
 import 'dart:io';
 
 import 'package:at_client/at_client.dart';
@@ -9,6 +10,7 @@ import 'package:path/path.dart' as p;
 import 'package:flutter/foundation.dart';
 
 import 'constants.dart';
+import '../features/storage/local_db.dart';
 
 /// Singleton wrapper around the Atsign Protocol [AtClientManager].
 ///
@@ -139,6 +141,8 @@ class AtService extends ChangeNotifier {
           '[AtService] Successfully authenticated as $normalizedAtSign',
         );
 
+        LocalDb.init(normalizedAtSign);
+
         // Start sync service
         syncService.sync();
       } else {
@@ -165,6 +169,7 @@ class AtService extends ChangeNotifier {
     _isAuthenticated = false;
     _atClientManager = null;
     _authError = null;
+    await LocalDb.closeInstance();
     notifyListeners();
   }
 
@@ -189,4 +194,45 @@ class AtService extends ChangeNotifier {
   ///
   /// Filters to: `*.AtNav` namespace only.
   String get locationNotificationRegex => '.${AppConstants.appNamespace}';
+
+  // ── Consent Protocol ───────────────────────────────────────────────────────
+
+  /// Internal helper to send consent state changes via NotificationService.
+  Future<void> _sendConsentNotification(String peerAtSign, String status) async {
+    if (!isAuthenticated) return;
+    try {
+      final key = AtKey()
+        ..key = AppConstants.consentKeyName
+        ..namespace = AppConstants.appNamespace
+        ..sharedWith = AtUtils.fixAtSign(peerAtSign)
+        ..sharedBy = _currentAtSign;
+
+      final payload = {
+        'status': status,
+      };
+
+      final request = NotificationParams.forUpdate(
+        key,
+        value: jsonEncode(payload),
+      );
+
+      await notificationService.notify(request);
+      debugPrint('[AtService] Sent consent $status to $peerAtSign');
+    } catch (e) {
+      debugPrint('[AtService] Failed to send consent notification: $e');
+    }
+  }
+
+  /// Initiates a location sharing request with a peer.
+  Future<void> sendConsentRequest(String peerAtSign) {
+    return _sendConsentNotification(peerAtSign, 'request');
+  }
+
+  /// Approves an inbound location sharing request.
+  Future<void> acceptConsentRequest(String peerAtSign) {
+    return _sendConsentNotification(peerAtSign, 'approved');
+  }
+
+  /// Revokes active location sharing or cancels a pending request.
+  Future<void> revokeConsent(String peerAtSign) => _sendConsentNotification(peerAtSign, 'revoked');
 }
