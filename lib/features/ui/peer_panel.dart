@@ -494,6 +494,21 @@ class _PeerPanelState extends State<PeerPanel> {
                             ],
                           ),
                           const SizedBox(height: 8),
+                          TextFormField(
+                            initialValue: peerConsent.displayName as String? ?? '',
+                            decoration: AtNavTheme.inputDecoration(
+                              label: 'ALIAS',
+                              hint: 'Custom Name',
+                            ).copyWith(
+                              contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                              isDense: true,
+                            ),
+                            style: AtNavTheme.monoData(size: 10),
+                            onFieldSubmitted: (val) {
+                              LocalDb.instance.updatePeerDisplayName(peer, val);
+                            },
+                          ),
+                          const SizedBox(height: 8),
                           _buildStatusControls(peer, status, outboundPermitted),
                           if (hasData) ...[
                             const SizedBox(height: 6),
