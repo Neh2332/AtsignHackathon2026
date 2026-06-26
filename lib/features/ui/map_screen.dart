@@ -42,8 +42,19 @@ class _MapScreenState extends State<MapScreen> with TickerProviderStateMixin {
 
   Map<String, TelemetryPoint> _latestPositions = {};
   final Map<String, List<TelemetryPoint>> _trails = {};
+  final Set<String> _hiddenPeers = {};
   StreamSubscription<Map<String, TelemetryPoint>>? _positionSubscription;
   StreamSubscription<TelemetryPoint>? _pointSubscription;
+
+  void _togglePeerVisibility(String atSign) {
+    setState(() {
+      if (_hiddenPeers.contains(atSign)) {
+        _hiddenPeers.remove(atSign);
+      } else {
+        _hiddenPeers.add(atSign);
+      }
+    });
+  }
 
   // Pulsing animation for active pins
   late final AnimationController _pulseController;
@@ -54,7 +65,7 @@ class _MapScreenState extends State<MapScreen> with TickerProviderStateMixin {
     super.initState();
 
     _localDb = LocalDb.instance;
-    _streamer = TelemetryStreamer(AtService.instance);
+    _streamer = TelemetryStreamer(AtService.instance, _localDb);
     _listener = TelemetryListener(AtService.instance, _localDb);
     _mapController = MapController();
 
@@ -158,6 +169,8 @@ class _MapScreenState extends State<MapScreen> with TickerProviderStateMixin {
                     streamer: _streamer,
                     listener: _listener,
                     latestPositions: _latestPositions,
+                    hiddenPeers: _hiddenPeers,
+                    onToggleVisibility: _togglePeerVisibility,
                   ),
                 ),
 
@@ -299,6 +312,7 @@ class _MapScreenState extends State<MapScreen> with TickerProviderStateMixin {
     final List<Polyline> polylines = [];
 
     for (final entry in _trails.entries) {
+      if (_hiddenPeers.contains(entry.key)) continue;
       final trail = entry.value;
       if (trail.length < 2) continue;
 
@@ -329,105 +343,170 @@ class _MapScreenState extends State<MapScreen> with TickerProviderStateMixin {
       markers.add(
         Marker(
           point: LatLng(position.latitude, position.longitude),
-          width: 40,
-          height: 40,
-          child: AnimatedBuilder(
-            animation: _pulseAnimation,
-            builder: (context, child) {
-              return Stack(
-                alignment: Alignment.center,
-                children: [
-                  // Pulsing halo (Green for self)
-                  Container(
-                    width: 32 * _pulseAnimation.value,
-                    height: 32 * _pulseAnimation.value,
-                    decoration: BoxDecoration(
-                      color: AtNavTheme.terminalGreen.withValues(
-                        alpha: 0.3 * (1 - _pulseAnimation.value),
+          width: 32,
+          height: 32,
+          alignment: Alignment.center,
+          child: Stack(
+            clipBehavior: Clip.none,
+            alignment: Alignment.center,
+            children: [
+              Positioned(
+                bottom: 24,
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                      decoration: BoxDecoration(
+                        color: AtNavTheme.bgElevated.withValues(alpha: 0.8),
+                        border: Border.all(color: AtNavTheme.terminalGreen, width: 1),
                       ),
-                      shape: BoxShape.circle,
-                    ),
-                  ),
-                  // Outer ring
-                  Container(
-                    width: 16,
-                    height: 16,
-                    decoration: BoxDecoration(
-                      color: Colors.transparent,
-                      shape: BoxShape.circle,
-                      border: Border.all(
-                        color: AtNavTheme.terminalGreen,
-                        width: 2,
+                      child: Text(
+                        'SELF',
+                        style: AtNavTheme.monoData(size: 10, color: AtNavTheme.terminalGreen),
                       ),
                     ),
-                  ),
-                  // Inner dot
-                  Container(
-                    width: 8,
-                    height: 8,
-                    decoration: const BoxDecoration(
+                    Container(
+                      width: 1,
+                      height: 8,
                       color: AtNavTheme.terminalGreen,
-                      shape: BoxShape.circle,
                     ),
-                  ),
-                ],
-              );
-            },
+                  ],
+                ),
+              ),
+              AnimatedBuilder(
+                animation: _pulseAnimation,
+                builder: (context, child) {
+                  return Stack(
+                    alignment: Alignment.center,
+                    children: [
+                      // Pulsing halo (Green for self)
+                      Container(
+                        width: 32 * _pulseAnimation.value,
+                        height: 32 * _pulseAnimation.value,
+                        decoration: BoxDecoration(
+                          color: AtNavTheme.terminalGreen.withValues(
+                            alpha: 0.3 * (1 - _pulseAnimation.value),
+                          ),
+                          shape: BoxShape.circle,
+                        ),
+                      ),
+                      // Outer ring
+                      Container(
+                        width: 16,
+                        height: 16,
+                        decoration: BoxDecoration(
+                          color: Colors.transparent,
+                          shape: BoxShape.circle,
+                          border: Border.all(
+                            color: AtNavTheme.terminalGreen,
+                            width: 2,
+                          ),
+                        ),
+                      ),
+                      // Inner dot
+                      Container(
+                        width: 8,
+                        height: 8,
+                        decoration: const BoxDecoration(
+                          color: AtNavTheme.terminalGreen,
+                          shape: BoxShape.circle,
+                        ),
+                      ),
+                    ],
+                  );
+                },
+              ),
+            ],
           ),
         ),
       );
     }
 
     for (final entry in _latestPositions.entries) {
+      if (_hiddenPeers.contains(entry.key)) continue;
       final position = entry.value;
 
       markers.add(
         Marker(
           point: LatLng(position.latitude, position.longitude),
-          width: 40,
-          height: 40,
-          child: AnimatedBuilder(
-            animation: _pulseAnimation,
-            builder: (context, child) {
-              return Stack(
-                alignment: Alignment.center,
-                children: [
-                  // Pulsing halo
-                  Container(
-                    width: 32 * _pulseAnimation.value,
-                    height: 32 * _pulseAnimation.value,
-                    decoration: BoxDecoration(
-                      color: AtNavTheme.accentOrange.withValues(
-                        alpha: 0.3 * (1 - _pulseAnimation.value),
+          width: 32,
+          height: 32,
+          alignment: Alignment.center,
+          child: Stack(
+            clipBehavior: Clip.none,
+            alignment: Alignment.center,
+            children: [
+              Positioned(
+                bottom: 24,
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                      decoration: BoxDecoration(
+                        color: AtNavTheme.bgElevated.withValues(alpha: 0.8),
+                        border: Border.all(color: AtNavTheme.accentOrange, width: 1),
                       ),
-                      shape: BoxShape.circle,
-                    ),
-                  ),
-                  // Outer ring
-                  Container(
-                    width: 16,
-                    height: 16,
-                    decoration: BoxDecoration(
-                      color: Colors.transparent,
-                      shape: BoxShape.circle,
-                      border: Border.all(
-                        color: AtNavTheme.accentOrange,
-                        width: 2,
+                      child: Text(
+                        entry.key.toUpperCase(),
+                        style: AtNavTheme.monoData(size: 10, color: AtNavTheme.accentOrange),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
                       ),
                     ),
-                  ),
-                  // Inner dot
-                  Container(
-                    width: 8,
-                    height: 8,
-                    decoration: const BoxDecoration(
+                    Container(
+                      width: 1,
+                      height: 8,
                       color: AtNavTheme.accentOrange,
-                      shape: BoxShape.circle,
                     ),
-                  ),
-                ],
-              );
-            },
+                  ],
+                ),
+              ),
+              AnimatedBuilder(
+                animation: _pulseAnimation,
+                builder: (context, child) {
+                  return Stack(
+                    alignment: Alignment.center,
+                    children: [
+                      // Pulsing halo
+                      Container(
+                        width: 32 * _pulseAnimation.value,
+                        height: 32 * _pulseAnimation.value,
+                        decoration: BoxDecoration(
+                          color: AtNavTheme.accentOrange.withValues(
+                            alpha: 0.3 * (1 - _pulseAnimation.value),
+                          ),
+                          shape: BoxShape.circle,
+                        ),
+                      ),
+                      // Outer ring
+                      Container(
+                        width: 16,
+                        height: 16,
+                        decoration: BoxDecoration(
+                          color: Colors.transparent,
+                          shape: BoxShape.circle,
+                          border: Border.all(
+                            color: AtNavTheme.accentOrange,
+                            width: 2,
+                          ),
+                        ),
+                      ),
+                      // Inner dot
+                      Container(
+                        width: 8,
+                        height: 8,
+                        decoration: const BoxDecoration(
+                          color: AtNavTheme.accentOrange,
+                          shape: BoxShape.circle,
+                        ),
+                      ),
+                    ],
+                  );
+                },
+              ),
+            ],
           ),
         ),
       );
