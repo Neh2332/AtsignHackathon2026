@@ -174,6 +174,7 @@ class _PeerPanelState extends State<PeerPanel> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
+          if (widget.headerWidget != null) widget.headerWidget!,
           // ── Identity Header ────────────────────────────────────────
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
