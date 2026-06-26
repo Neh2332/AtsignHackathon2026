@@ -79,7 +79,7 @@ class _PeerPanelState extends State<PeerPanel> {
         children: [
           Expanded(
             child: SizedBox(
-              height: 28,
+              height: 48,
               child: ElevatedButton(
                 onPressed: () {
                   AtService.instance.acceptConsentRequest(peer);
@@ -93,7 +93,7 @@ class _PeerPanelState extends State<PeerPanel> {
           const SizedBox(width: 8),
           Expanded(
             child: SizedBox(
-              height: 28,
+              height: 48,
               child: ElevatedButton(
                 onPressed: () {
                   AtService.instance.revokeConsent(peer);
@@ -166,9 +166,11 @@ class _PeerPanelState extends State<PeerPanel> {
 
     return Container(
       decoration: AtNavTheme.panelDecoration(),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
+      child: SingleChildScrollView(
+        controller: widget.scrollController,
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
           // ── Identity Header ────────────────────────────────────────
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
@@ -233,7 +235,7 @@ class _PeerPanelState extends State<PeerPanel> {
                   children: [
                     Expanded(
                       child: SizedBox(
-                        height: 36,
+                        height: 48,
                         child: ElevatedButton(
                           onPressed: widget.streamer.isStreaming
                               ? widget.streamer.stopStreaming
@@ -304,7 +306,7 @@ class _PeerPanelState extends State<PeerPanel> {
                   children: [
                     Expanded(
                       child: SizedBox(
-                        height: 36,
+                        height: 48,
                         child: TextField(
                           controller: _peerInputController,
                           style: AtNavTheme.monoData(size: 12),
@@ -323,8 +325,8 @@ class _PeerPanelState extends State<PeerPanel> {
                     ),
                     const SizedBox(width: 8),
                     SizedBox(
-                      height: 36,
-                      width: 36,
+                      height: 48,
+                      width: 48,
                       child: IconButton(
                         onPressed: _addPeer,
                         icon: const Icon(Icons.add, size: 16),
@@ -369,9 +371,8 @@ class _PeerPanelState extends State<PeerPanel> {
           ),
 
           // ── Peer List ──────────────────────────────────────────────
-          Expanded(
-            child: StreamBuilder<dynamic>(
-              stream: LocalDb.instance.watchConsents(),
+          StreamBuilder<dynamic>(
+            stream: LocalDb.instance.watchConsents(),
               builder: (context, snapshot) {
                 final consents = (snapshot.data as List<dynamic>?) ?? [];
                 final validPeers = consents.where((c) => c.status != 'none').toList();
@@ -402,7 +403,8 @@ class _PeerPanelState extends State<PeerPanel> {
                 }
 
                 return ListView.separated(
-                  controller: widget.scrollController,
+                  shrinkWrap: true,
+                  physics: const NeverScrollableScrollPhysics(),
                   padding: EdgeInsets.zero,
                   itemCount: validPeers.length,
                   separatorBuilder: (_, __) => const Divider(
@@ -519,8 +521,8 @@ class _PeerPanelState extends State<PeerPanel> {
                 );
               },
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }
