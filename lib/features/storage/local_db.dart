@@ -338,6 +338,7 @@ class LocalDb extends _$LocalDb {
         status: Value(status),
         lastUpdated: DateTime.now().toUtc().toIso8601String(),
         outboundPermitted: outboundPermitted != null ? Value(outboundPermitted) : const Value.absent(),
+        displayName: displayName != null ? Value(displayName) : const Value.absent(),
       ),
     );
   }
