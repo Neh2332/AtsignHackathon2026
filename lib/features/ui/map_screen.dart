@@ -746,64 +746,66 @@ class _MapScreenState extends State<MapScreen> with TickerProviderStateMixin {
   Widget _buildMapOverlay({bool useSafeArea = false}) {
     if (_latestPositions.isEmpty) return const SizedBox.shrink();
 
-    Widget content = Container(
+    final Widget content = Container(
       padding: const EdgeInsets.all(10),
-        decoration: BoxDecoration(
-          color: AtNavTheme.bgPrimary.withValues(alpha: 0.9),
-          border: Border.all(color: AtNavTheme.borderColor, width: 1),
-          borderRadius: BorderRadius.circular(6),
-        ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.end,
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Text(
-              'LIVE SIGNALS',
-              style: AtNavTheme.monoLabel(
-                size: 8,
-                color: AtNavTheme.accentOrange,
-              ),
+      decoration: BoxDecoration(
+        color: AtNavTheme.bgPrimary.withValues(alpha: 0.9),
+        border: Border.all(color: AtNavTheme.borderColor, width: 1),
+        borderRadius: BorderRadius.circular(6),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.end,
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Text(
+            'LIVE SIGNALS',
+            style: AtNavTheme.monoLabel(
+              size: 8,
+              color: AtNavTheme.accentOrange,
             ),
-            const SizedBox(height: 6),
-            ..._latestPositions.entries.map((entry) {
-              return Padding(
-                padding: const EdgeInsets.only(bottom: 4),
-                child: GestureDetector(
-                  onTap: () => _centerOnPeer(entry.key),
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Container(
-                        width: 6,
-                        height: 6,
+          ),
+          const SizedBox(height: 6),
+          ..._latestPositions.entries.map((entry) {
+            return Padding(
+              padding: const EdgeInsets.only(bottom: 4),
+              child: GestureDetector(
+                onTap: () => _centerOnPeer(entry.key),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Container(
+                      width: 6,
+                      height: 6,
+                      color: AtNavTheme.accentOrange,
+                    ),
+                    const SizedBox(width: 6),
+                    Text(
+                      entry.key.toUpperCase(),
+                      style: AtNavTheme.monoData(
+                        size: 9,
                         color: AtNavTheme.accentOrange,
                       ),
-                      const SizedBox(width: 6),
-                      Text(
-                        entry.key.toUpperCase(),
-                        style: AtNavTheme.monoData(
-                          size: 9,
-                          color: AtNavTheme.accentOrange,
-                        ),
-                      ),
-                    ],
-                  ),
+                    ),
+                  ],
                 ),
-              );
-            }),
-          ],
-        ),
-      );
+              ),
+            );
+          }),
+        ],
+      ),
+    );
 
-    if (useSafeArea) {
-      content = SafeArea(child: content);
-    }
-
-    return Positioned(
+    // SafeArea must wrap the *entire* Positioned widget, not just the child.
+    // Wrapping only the child inserts a Padding between Positioned and Stack,
+    // which Flutter rejects with a fatal ParentDataWidget error.
+    final positioned = Positioned(
       top: 12,
       right: 12,
       child: content,
     );
+
+    if (useSafeArea) return SafeArea(child: positioned);
+    return positioned;
   }
 
   // ── Zoom Controls ────────────────────────────────────────────────────────
@@ -811,14 +813,14 @@ class _MapScreenState extends State<MapScreen> with TickerProviderStateMixin {
   Widget _buildZoomControls({required bool isMobile, bool useSafeArea = false}) {
     // Button size scales with screen width
     final double btnSize = AtNavTheme.controlHeight(context) - 4;
-    Widget content = Column(
+    final Widget content = Column(
       mainAxisSize: MainAxisSize.min,
       children: [
         _zoomButton(Icons.add, btnSize, () {
           final z = _mapController.camera.zoom;
           _mapController.move(_mapController.camera.center, z + 1);
         }),
-        SizedBox(height: 10),
+        const SizedBox(height: 10),
         _zoomButton(Icons.remove, btnSize, () {
           final z = _mapController.camera.zoom;
           _mapController.move(_mapController.camera.center, z - 1);
@@ -826,17 +828,17 @@ class _MapScreenState extends State<MapScreen> with TickerProviderStateMixin {
       ],
     );
 
-    if (useSafeArea) {
-      content = SafeArea(child: content);
-    }
-
-    // Zoom controls sit at the very top-right, directly beneath the
-    // navigation header on both mobile and desktop.
-    return Positioned(
+    // SafeArea must wrap the *entire* Positioned widget, not just the child.
+    // Wrapping only the child inserts a Padding between Positioned and Stack,
+    // which Flutter rejects with a fatal ParentDataWidget error.
+    final positioned = Positioned(
       right: 12,
       top: 12,
       child: content,
     );
+
+    if (useSafeArea) return SafeArea(child: positioned);
+    return positioned;
   }
 
   Widget _zoomButton(IconData icon, double size, VoidCallback onPressed) {
