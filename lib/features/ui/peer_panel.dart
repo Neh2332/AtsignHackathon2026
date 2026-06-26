@@ -210,6 +210,10 @@ class _PeerPanelState extends State<PeerPanel> {
   @override
   Widget build(BuildContext context) {
     final atService = AtService.instance;
+    // ── Responsive tokens ─────────────────────────────────────────────
+    final double s     = AtNavTheme.scaleOf(context);
+    final double hp    = AtNavTheme.hPad(context);
+    final double ctrlH = AtNavTheme.controlHeight(context);
 
     return Container(
       decoration: AtNavTheme.panelDecoration(),
@@ -221,7 +225,7 @@ class _PeerPanelState extends State<PeerPanel> {
           if (widget.headerWidget != null) widget.headerWidget!,
           // ── Identity Header ────────────────────────────────────────
           Container(
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+            padding: EdgeInsets.symmetric(horizontal: hp, vertical: 10 * s),
             decoration: const BoxDecoration(
               border: Border(
                 bottom: BorderSide(color: AtNavTheme.accentOrange, width: 2),
@@ -233,19 +237,22 @@ class _PeerPanelState extends State<PeerPanel> {
                 Row(
                   crossAxisAlignment: CrossAxisAlignment.center,
                   children: [
-                    const Icon(
+                    Icon(
                       Icons.location_on,
                       color: AtNavTheme.accentOrange,
-                      size: 22,
+                      size: 20 * s,
                     ),
-                    const SizedBox(width: 6),
-                    Text(
-                      'AtNav',
-                      style: AtNavTheme.macroHeader(22),
+                    SizedBox(width: 5 * s),
+                    Flexible(
+                      child: Text(
+                        'AtNav',
+                        style: AtNavTheme.macroHeader(20 * s),
+                        overflow: TextOverflow.ellipsis,
+                      ),
                     ),
                   ],
                 ),
-                const SizedBox(height: 4),
+                SizedBox(height: 4 * s),
                 Row(
                   children: [
                     Container(
@@ -256,13 +263,16 @@ class _PeerPanelState extends State<PeerPanel> {
                           : AtNavTheme.accentOrange,
                     ),
                     const SizedBox(width: 6),
-                    Text(
-                      atService.currentAtSign?.toUpperCase() ?? 'NOT CONNECTED',
-                      style: AtNavTheme.monoData(
-                        size: 11,
-                        color: atService.isAuthenticated
-                            ? AtNavTheme.terminalGreen
-                            : AtNavTheme.accentOrange,
+                    Flexible(
+                      child: Text(
+                        atService.currentAtSign?.toUpperCase() ?? 'NOT CONNECTED',
+                        style: AtNavTheme.monoData(
+                          size: 10 * s,
+                          color: atService.isAuthenticated
+                              ? AtNavTheme.terminalGreen
+                              : AtNavTheme.accentOrange,
+                        ),
+                        overflow: TextOverflow.ellipsis,
                       ),
                     ),
                   ],
@@ -273,7 +283,7 @@ class _PeerPanelState extends State<PeerPanel> {
 
           // ── Streaming Controls ─────────────────────────────────────
           Container(
-            padding: const EdgeInsets.all(12),
+            padding: EdgeInsets.all(hp * 0.65),
             decoration: const BoxDecoration(
               border: Border(
                 bottom: BorderSide(color: AtNavTheme.borderColor, width: 1),
@@ -285,16 +295,16 @@ class _PeerPanelState extends State<PeerPanel> {
                 Text(
                   AtNavTheme.asciiFrame('BROADCAST CONTROL'),
                   style: AtNavTheme.monoLabel(
-                    size: 9,
+                    size: 8.5 * s,
                     color: AtNavTheme.accentOrange,
                   ),
                 ),
-                const SizedBox(height: 8),
+                SizedBox(height: 7 * s),
                 Row(
                   children: [
                     Expanded(
                       child: SizedBox(
-                        height: 48,
+                        height: ctrlH,
                         child: ElevatedButton(
                           onPressed: widget.streamer.isStreaming
                               ? widget.streamer.stopStreaming
@@ -307,7 +317,7 @@ class _PeerPanelState extends State<PeerPanel> {
                                 ? '/// STOP STREAM'
                                 : '>>> START STREAM',
                             style: AtNavTheme.monoData(
-                              size: 10,
+                              size: 10 * s,
                               weight: FontWeight.w700,
                             ),
                           ),
@@ -316,14 +326,14 @@ class _PeerPanelState extends State<PeerPanel> {
                     ),
                   ],
                 ),
-                const SizedBox(height: 6),
+                SizedBox(height: 5 * s),
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
                     Text(
                       'TX: ${widget.streamer.isStreaming ? "ACTIVE" : "IDLE"}',
                       style: AtNavTheme.monoData(
-                        size: 9,
+                        size: 8.5 * s,
                         color: widget.streamer.isStreaming
                             ? AtNavTheme.terminalGreen
                             : AtNavTheme.fgTertiary,
@@ -332,7 +342,7 @@ class _PeerPanelState extends State<PeerPanel> {
                     Text(
                       'RX: ${widget.listener.receivedCount}',
                       style: AtNavTheme.monoData(
-                        size: 9,
+                        size: 8.5 * s,
                         color: AtNavTheme.fgSecondary,
                       ),
                     ),
@@ -344,7 +354,7 @@ class _PeerPanelState extends State<PeerPanel> {
 
           // ── Add Peer Input ─────────────────────────────────────────
           Container(
-            padding: const EdgeInsets.all(12),
+            padding: EdgeInsets.all(hp * 0.65),
             decoration: const BoxDecoration(
               border: Border(
                 bottom: BorderSide(color: AtNavTheme.borderColor, width: 1),
@@ -356,39 +366,39 @@ class _PeerPanelState extends State<PeerPanel> {
                 Text(
                   AtNavTheme.asciiFrame('ADD PEER'),
                   style: AtNavTheme.monoLabel(
-                    size: 9,
+                    size: 8.5 * s,
                     color: AtNavTheme.accentOrange,
                   ),
                 ),
-                const SizedBox(height: 8),
+                SizedBox(height: 7 * s),
                 Row(
                   children: [
                     Expanded(
                       child: SizedBox(
-                        height: 48,
+                        height: ctrlH,
                         child: TextField(
                           controller: _peerInputController,
-                          style: AtNavTheme.monoData(size: 12),
+                          style: AtNavTheme.monoData(size: 11 * s),
                           decoration: AtNavTheme.inputDecoration(
                             label: '',
                             hint: '@PEER_ATSIGN',
                           ).copyWith(
-                            contentPadding: const EdgeInsets.symmetric(
-                              horizontal: 12,
-                              vertical: 8,
+                            contentPadding: EdgeInsets.symmetric(
+                              horizontal: 10 * s,
+                              vertical: 0,
                             ),
                           ),
                           onSubmitted: (_) => _addPeer(),
                         ),
                       ),
                     ),
-                    const SizedBox(width: 8),
+                    SizedBox(width: 7 * s),
                     SizedBox(
-                      height: 48,
-                      width: 48,
+                      height: ctrlH,
+                      width: ctrlH,
                       child: IconButton(
                         onPressed: _addPeer,
-                        icon: const Icon(Icons.add, size: 16),
+                        icon: Icon(Icons.add, size: 15 * s),
                         style: ButtonStyle(
                           backgroundColor: WidgetStateProperty.all(
                             AtNavTheme.bgElevated,
@@ -406,14 +416,13 @@ class _PeerPanelState extends State<PeerPanel> {
                     ),
                   ],
                 ),
-                // Share duration dropdown removed
               ],
             ),
           ),
 
           // ── Peer List Header ───────────────────────────────────────
           Container(
-            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+            padding: EdgeInsets.symmetric(horizontal: hp * 0.65, vertical: 7 * s),
             color: AtNavTheme.bgElevated,
             child: Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -482,9 +491,9 @@ class _PeerPanelState extends State<PeerPanel> {
                     final hasData = position != null && status == 'approved';
 
                     return Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 12,
-                        vertical: 10,
+                      padding: EdgeInsets.symmetric(
+                        horizontal: hp * 0.65,
+                        vertical: 9 * s,
                       ),
                       color: AtNavTheme.bgSurface,
                       child: Column(
@@ -493,8 +502,8 @@ class _PeerPanelState extends State<PeerPanel> {
                           Row(
                             children: [
                               Container(
-                                width: 8,
-                                height: 8,
+                                width: 7 * s,
+                                height: 7 * s,
                                 decoration: BoxDecoration(
                                   color: status == 'approved'
                                       ? AtNavTheme.terminalGreen
@@ -502,12 +511,12 @@ class _PeerPanelState extends State<PeerPanel> {
                                   shape: BoxShape.circle,
                                 ),
                               ),
-                              const SizedBox(width: 8),
+                              SizedBox(width: 7 * s),
                               Expanded(
                                 child: Text(
                                   peer.toUpperCase(),
                                   style: AtNavTheme.monoData(
-                                    size: 12,
+                                    size: 11 * s,
                                     weight: FontWeight.w700,
                                   ),
                                   overflow: TextOverflow.ellipsis,
@@ -520,16 +529,16 @@ class _PeerPanelState extends State<PeerPanel> {
                                     children: [
                                       Text(
                                         widget.hiddenPeers.contains(peer)
-                                            ? 'HIDE ON MAP'
-                                            : 'SHOW ON MAP',
+                                            ? 'HIDE'
+                                            : 'SHOW',
                                         style: AtNavTheme.monoLabel(
-                                          size: 8,
+                                          size: 7.5 * s,
                                           color: widget.hiddenPeers.contains(peer)
                                               ? AtNavTheme.fgTertiary
                                               : AtNavTheme.terminalGreen,
                                         ),
                                       ),
-                                      const SizedBox(width: 4),
+                                      SizedBox(width: 3 * s),
                                       Icon(
                                         widget.hiddenPeers.contains(peer)
                                             ? Icons.visibility_off
@@ -537,42 +546,47 @@ class _PeerPanelState extends State<PeerPanel> {
                                         color: widget.hiddenPeers.contains(peer)
                                             ? AtNavTheme.fgTertiary
                                             : AtNavTheme.terminalGreen,
-                                        size: 16,
+                                        size: 14 * s,
                                       ),
                                     ],
                                   ),
                                 ),
                             ],
                           ),
-                          const SizedBox(height: 8),
+                          SizedBox(height: 7 * s),
                           TextFormField(
                             initialValue: peerConsent.displayName as String? ?? '',
                             decoration: AtNavTheme.inputDecoration(
                               label: 'ALIAS',
                               hint: 'Custom Name',
                             ).copyWith(
-                              contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                              contentPadding: EdgeInsets.symmetric(
+                                horizontal: 10 * s,
+                                vertical: 9 * s,
+                              ),
                               isDense: false,
                             ),
-                            // Alias text is deliberately larger for quick scannability
-                            style: AtNavTheme.monoData(size: 15, weight: FontWeight.w600),
+                            // Alias text — deliberately prominent for scannability
+                            style: AtNavTheme.monoData(
+                              size: 14 * s,
+                              weight: FontWeight.w600,
+                            ),
                             onFieldSubmitted: (val) {
                               LocalDb.instance.updatePeerDisplayName(peer, val);
                             },
                           ),
-                          const SizedBox(height: 8),
+                          SizedBox(height: 7 * s),
                           _buildStatusControls(peer, status, outboundPermitted),
                           if (hasData) ...[
-                            const SizedBox(height: 6),
+                            SizedBox(height: 5 * s),
                             Row(
-                              mainAxisAlignment:
-                                  MainAxisAlignment.spaceBetween,
+                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
                               children: [
                                 Flexible(
                                   child: Text(
                                     'LAT ${position.latitude.toStringAsFixed(6)}',
                                     style: AtNavTheme.monoData(
-                                      size: 10,
+                                      size: 9.5 * s,
                                       color: AtNavTheme.fgSecondary,
                                     ),
                                     overflow: TextOverflow.ellipsis,
@@ -583,7 +597,7 @@ class _PeerPanelState extends State<PeerPanel> {
                                   child: Text(
                                     'LNG ${position.longitude.toStringAsFixed(6)}',
                                     style: AtNavTheme.monoData(
-                                      size: 10,
+                                      size: 9.5 * s,
                                       color: AtNavTheme.fgSecondary,
                                     ),
                                     overflow: TextOverflow.ellipsis,
@@ -592,24 +606,21 @@ class _PeerPanelState extends State<PeerPanel> {
                                 ),
                               ],
                             ),
-                            const SizedBox(height: 2),
+                            SizedBox(height: 2 * s),
                             Row(
-                              mainAxisAlignment:
-                                  MainAxisAlignment.spaceBetween,
+                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
                               children: [
                                 Text(
-                                  _timeFormat.format(
-                                    position.timestamp.toLocal(),
-                                  ),
+                                  _timeFormat.format(position.timestamp.toLocal()),
                                   style: AtNavTheme.monoLabel(
-                                    size: 9,
+                                    size: 8.5 * s,
                                     color: AtNavTheme.fgTertiary,
                                   ),
                                 ),
                                 Text(
                                   _formatAge(position.timestamp),
                                   style: AtNavTheme.monoLabel(
-                                    size: 9,
+                                    size: 8.5 * s,
                                     color: AtNavTheme.fgTertiary,
                                   ),
                                 ),

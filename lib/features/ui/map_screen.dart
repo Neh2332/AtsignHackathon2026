@@ -280,6 +280,13 @@ class _MapScreenState extends State<MapScreen> with TickerProviderStateMixin {
 
   /// Mobile layout: AppBar + full-screen map + draggable bottom sheet.
   Widget _buildMobileLayout() {
+    // Adapt sheet snap sizes to screen height so the panel feels natural
+    // on compact phones (e.g. SE) and tall phones (e.g. Pro Max) alike.
+    final double screenH = MediaQuery.sizeOf(context).height;
+    final double initSnap  = screenH < 700 ? 0.10 : 0.12;
+    final double midSnap   = screenH < 700 ? 0.40 : 0.45;
+    final double maxSnap   = screenH < 700 ? 0.70 : 0.75;
+
     return Scaffold(
       backgroundColor: AtNavTheme.bgPrimary,
       appBar: PreferredSize(
@@ -288,23 +295,23 @@ class _MapScreenState extends State<MapScreen> with TickerProviderStateMixin {
       ),
       body: Stack(
         children: [
-          // ── Full-screen Map ──────────────────────────────────────────
+          // ── Full-screen Map ───────────────────────────────────────
           _buildMap(),
 
-          // ── Map Overlay (Peer coords, top-right) ────────────────────
+          // ── Map Overlay (Peer coords, top-right) ──────────────────
           _buildMapOverlay(useSafeArea: true),
 
-          // ── Zoom Controls ──────────────────────────────────────────────
+          // ── Zoom Controls ───────────────────────────────────────
           _buildZoomControls(isMobile: true, useSafeArea: true),
 
-          // ── Peer Management Bottom Sheet ─────────────────────────────
+          // ── Peer Management Bottom Sheet ───────────────────────
           DraggableScrollableSheet(
             controller: _sheetController,
-            initialChildSize: 0.12,
-            minChildSize: 0.08,
-            maxChildSize: 0.75,
+            initialChildSize: initSnap,
+            minChildSize: initSnap * 0.65,
+            maxChildSize: maxSnap,
             snap: true,
-            snapSizes: const [0.12, 0.45, 0.75],
+            snapSizes: [initSnap, midSnap, maxSnap],
             builder: (context, scrollController) {
               return _buildPeerSheet(scrollController);
             },
@@ -317,23 +324,25 @@ class _MapScreenState extends State<MapScreen> with TickerProviderStateMixin {
   /// Mobile AppBar with AtNav branding, connection status, and logout.
   Widget _buildMobileAppBar() {
     final isOnline = AtService.instance.isAuthenticated;
+    // Scale title font with screen width
+    final double s = AtNavTheme.scaleOf(context);
     return AppBar(
       backgroundColor: AtNavTheme.bgPrimary,
       elevation: 0,
-      titleSpacing: 16,
+      titleSpacing: 14,
       title: Row(
         children: [
-          const Icon(
+          Icon(
             Icons.location_on,
             color: AtNavTheme.accentOrange,
-            size: 20,
+            size: 18 * s,
           ),
-          const SizedBox(width: 6),
+          SizedBox(width: 5 * s),
           Text(
             'AtNav',
-            style: AtNavTheme.macroHeader(20),
+            style: AtNavTheme.macroHeader(18 * s),
           ),
-          const SizedBox(width: 8),
+          SizedBox(width: 7 * s),
           Container(
             width: 6,
             height: 6,
@@ -800,15 +809,17 @@ class _MapScreenState extends State<MapScreen> with TickerProviderStateMixin {
   // ── Zoom Controls ────────────────────────────────────────────────────────
   
   Widget _buildZoomControls({required bool isMobile, bool useSafeArea = false}) {
+    // Button size scales with screen width
+    final double btnSize = AtNavTheme.controlHeight(context) - 4;
     Widget content = Column(
       mainAxisSize: MainAxisSize.min,
       children: [
-        _zoomButton(Icons.add, () {
+        _zoomButton(Icons.add, btnSize, () {
           final z = _mapController.camera.zoom;
           _mapController.move(_mapController.camera.center, z + 1);
         }),
-        const SizedBox(height: 12),
-        _zoomButton(Icons.remove, () {
+        SizedBox(height: 10),
+        _zoomButton(Icons.remove, btnSize, () {
           final z = _mapController.camera.zoom;
           _mapController.move(_mapController.camera.center, z - 1);
         }),
@@ -819,8 +830,8 @@ class _MapScreenState extends State<MapScreen> with TickerProviderStateMixin {
       content = SafeArea(child: content);
     }
 
-    // On both mobile and desktop the zoom controls sit at the very top-right,
-    // directly underneath the navigation header (AppBar/TopBar).
+    // Zoom controls sit at the very top-right, directly beneath the
+    // navigation header on both mobile and desktop.
     return Positioned(
       right: 12,
       top: 12,
@@ -828,26 +839,26 @@ class _MapScreenState extends State<MapScreen> with TickerProviderStateMixin {
     );
   }
 
-  Widget _zoomButton(IconData icon, VoidCallback onPressed) {
+  Widget _zoomButton(IconData icon, double size, VoidCallback onPressed) {
     return InkWell(
       onTap: onPressed,
-      borderRadius: BorderRadius.circular(12),
+      borderRadius: BorderRadius.circular(10),
       child: Container(
-        width: 48,
-        height: 48,
+        width: size,
+        height: size,
         decoration: BoxDecoration(
           color: AtNavTheme.bgSurface.withValues(alpha: 0.95),
           border: Border.all(color: AtNavTheme.borderColor),
-          borderRadius: BorderRadius.circular(12),
+          borderRadius: BorderRadius.circular(10),
           boxShadow: [
             BoxShadow(
               color: Colors.black.withValues(alpha: 0.08),
               blurRadius: 8,
               offset: const Offset(0, 4),
             )
-          ]
+          ],
         ),
-        child: Icon(icon, color: AtNavTheme.fgPrimary),
+        child: Icon(icon, color: AtNavTheme.fgPrimary, size: size * 0.4),
       ),
     );
   }

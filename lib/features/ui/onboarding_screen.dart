@@ -4,13 +4,13 @@ import 'package:file_picker/file_picker.dart';
 import '../../core/at_service.dart';
 import 'theme.dart';
 
-/// Full-screen onboarding screen for atSign authentication.
+/// Full-screen, fully-responsive onboarding screen for atSign authentication.
 ///
-/// Provides a `.atKeys` file picker with drag-and-drop zone,
-/// atSign input field with a **centered** `@` prefix validation, and
-/// connection status display with ASCII status codes.
-///
-/// Layout fills the entire viewport — no constrained center box.
+/// Adapts padding, font sizes, icon sizes, and layout constraints to:
+/// - Small phones  (< 360 px) — compact mode
+/// - Standard phones (360–599 px) — standard mobile
+/// - Tablets (600–799 px) — wider, form centred with max-width
+/// - Desktop (≥ 800 px) — handled by MapScreen routing; not typically shown
 class OnboardingScreen extends StatefulWidget {
   final VoidCallback onAuthenticated;
 
@@ -63,16 +63,11 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
   Future<void> _authenticate() async {
     final atSign = _atSignController.text.trim();
     if (atSign.isEmpty) {
-      setState(() {
-        _errorMessage = 'ATSIGN REQUIRED';
-      });
+      setState(() => _errorMessage = 'ATSIGN REQUIRED');
       return;
     }
-
     if (_selectedFilePath == null) {
-      setState(() {
-        _errorMessage = 'ATKEYS FILE REQUIRED';
-      });
+      setState(() => _errorMessage = 'ATKEYS FILE REQUIRED');
       return;
     }
 
@@ -94,12 +89,12 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
           _statusText = 'AUTHENTICATED: ${atService.currentAtSign}';
           _isLoading = false;
         });
-        // Brief delay to show success status
         await Future.delayed(const Duration(milliseconds: 500));
         widget.onAuthenticated();
       } else {
         setState(() {
-          _errorMessage = atService.authError?.toUpperCase() ?? 'AUTHENTICATION FAILED';
+          _errorMessage =
+              atService.authError?.toUpperCase() ?? 'AUTHENTICATION FAILED';
           _statusText = 'AUTH FAILURE';
           _isLoading = false;
         });
@@ -109,24 +104,27 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
 
   @override
   Widget build(BuildContext context) {
+    // ── Responsive tokens ──────────────────────────────────────────────────
+    final double s = AtNavTheme.scaleOf(context);       // scale factor
+    final double hp = AtNavTheme.hPad(context);          // horizontal padding
+    final double ctrlH = AtNavTheme.controlHeight(context); // button/input height
+    final bool wide = AtNavTheme.isWide(context);        // tablet+
+
     return Scaffold(
       backgroundColor: AtNavTheme.bgPrimary,
       body: SafeArea(
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            // ── Header ──────────────────────────────────────────────────
+            // ── Header ────────────────────────────────────────────────────
             Container(
-              padding: const EdgeInsets.symmetric(
-                horizontal: 24,
-                vertical: 20,
+              padding: EdgeInsets.symmetric(
+                horizontal: hp,
+                vertical: 14 * s,
               ),
               decoration: const BoxDecoration(
                 border: Border(
-                  bottom: BorderSide(
-                    color: AtNavTheme.accentOrange,
-                    width: 2,
-                  ),
+                  bottom: BorderSide(color: AtNavTheme.accentOrange, width: 2),
                 ),
               ),
               child: Column(
@@ -135,23 +133,23 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                   Row(
                     crossAxisAlignment: CrossAxisAlignment.center,
                     children: [
-                      const Icon(
+                      Icon(
                         Icons.location_on,
                         color: AtNavTheme.accentOrange,
-                        size: 36,
+                        size: 32 * s,
                       ),
-                      const SizedBox(width: 8),
+                      SizedBox(width: 6 * s),
                       Text(
                         'AtNav',
-                        style: AtNavTheme.macroHeader(40),
+                        style: AtNavTheme.macroHeader(34 * s),
                       ),
                     ],
                   ),
-                  const SizedBox(height: 6),
+                  SizedBox(height: 5 * s),
                   Text(
                     'DECENTRALIZED LOCATION SHARING /// E2E ENCRYPTED',
                     style: AtNavTheme.monoLabel(
-                      size: 9,
+                      size: 8.5 * s,
                       color: AtNavTheme.fgTertiary,
                     ),
                   ),
@@ -159,12 +157,9 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
               ),
             ),
 
-            // ── Status Bar ──────────────────────────────────────────────
+            // ── Status Bar ────────────────────────────────────────────────
             Container(
-              padding: const EdgeInsets.symmetric(
-                horizontal: 24,
-                vertical: 10,
-              ),
+              padding: EdgeInsets.symmetric(horizontal: hp, vertical: 8 * s),
               color: AtNavTheme.bgElevated,
               child: Row(
                 children: [
@@ -176,297 +171,307 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                         : AtNavTheme.fgTertiary,
                   ),
                   const SizedBox(width: 8),
-                  Text(
-                    'STATUS: $_statusText',
-                    style: AtNavTheme.monoData(
-                      size: 10,
-                      color: AtNavTheme.fgSecondary,
+                  Flexible(
+                    child: Text(
+                      'STATUS: $_statusText',
+                      style: AtNavTheme.monoData(
+                        size: 10 * s,
+                        color: AtNavTheme.fgSecondary,
+                      ),
+                      overflow: TextOverflow.ellipsis,
                     ),
                   ),
                 ],
               ),
             ),
 
-            // ── Form Content — expands to fill remaining space ───────────
+            // ── Form Content — expands, optionally centred on tablet ───────
             Expanded(
               child: SingleChildScrollView(
-                padding: const EdgeInsets.all(24),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                  children: [
-                    // Section label
-                    Text(
-                      AtNavTheme.asciiFrame('IDENTITY CREDENTIALS'),
-                      style: AtNavTheme.monoLabel(
-                        size: 10,
-                        color: AtNavTheme.accentOrange,
-                      ),
+                padding: EdgeInsets.symmetric(
+                  horizontal: hp,
+                  vertical: 20 * s,
+                ),
+                child: Center(
+                  child: ConstrainedBox(
+                    // On tablets, cap the form width so it doesn't stretch
+                    // awkwardly across the full screen.
+                    constraints: BoxConstraints(
+                      maxWidth: wide ? 480 : double.infinity,
                     ),
-                    const SizedBox(height: 16),
-
-                    // ── atSign input with centred @ ──────────────────────
-                    // We need the @ glyph to be vertically centred inside
-                    // the input row.  We achieve this by placing it inside
-                    // an IntrinsicHeight Row so it can align Alignment.center
-                    // regardless of the input's dynamic height.
-                    IntrinsicHeight(
-                      child: Row(
-                        crossAxisAlignment: CrossAxisAlignment.stretch,
-                        children: [
-                          // @ prefix box — same height as the text field
-                          Container(
-                            width: 52,
-                            alignment: Alignment.center,
-                            decoration: BoxDecoration(
-                              color: AtNavTheme.bgElevated,
-                              border: Border.all(
-                                color: AtNavTheme.borderColor,
-                                width: 1,
-                              ),
-                              borderRadius: const BorderRadius.only(
-                                topLeft: Radius.circular(6),
-                                bottomLeft: Radius.circular(6),
-                              ),
-                            ),
-                            child: Text(
-                              '@',
-                              style: AtNavTheme.monoData(
-                                size: 20,
-                                color: AtNavTheme.accentOrange,
-                                weight: FontWeight.w700,
-                              ),
-                            ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: [
+                        // Section label
+                        Text(
+                          AtNavTheme.asciiFrame('IDENTITY CREDENTIALS'),
+                          style: AtNavTheme.monoLabel(
+                            size: 9.5 * s,
+                            color: AtNavTheme.accentOrange,
                           ),
-                          // Text input — takes remaining width
-                          Expanded(
-                            child: TextField(
-                              controller: _atSignController,
-                              style: AtNavTheme.monoData(size: 14),
-                              enabled: !_isLoading,
-                              decoration: InputDecoration(
-                                hintText: 'your_atsign',
-                                hintStyle: AtNavTheme.monoData(
-                                  size: 14,
-                                  color: AtNavTheme.fgTertiary,
-                                ),
-                                filled: true,
-                                fillColor: AtNavTheme.bgPrimary,
-                                contentPadding: const EdgeInsets.symmetric(
-                                  horizontal: 14,
-                                  vertical: 0,
-                                ),
-                                enabledBorder: const OutlineInputBorder(
-                                  borderRadius: BorderRadius.only(
-                                    topRight: Radius.circular(6),
-                                    bottomRight: Radius.circular(6),
-                                  ),
-                                  borderSide: BorderSide(
+                        ),
+                        SizedBox(height: 14 * s),
+
+                        // ── atSign input with centred @ ─────────────────
+                        // IntrinsicHeight ensures the @ box is always
+                        // pixel-identical in height to the TextField.
+                        IntrinsicHeight(
+                          child: Row(
+                            crossAxisAlignment: CrossAxisAlignment.stretch,
+                            children: [
+                              // @ prefix — vertically centred via Align
+                              Container(
+                                width: 48 * s,
+                                alignment: Alignment.center,
+                                decoration: BoxDecoration(
+                                  color: AtNavTheme.bgElevated,
+                                  border: Border.all(
                                     color: AtNavTheme.borderColor,
                                     width: 1,
                                   ),
-                                ),
-                                focusedBorder: const OutlineInputBorder(
-                                  borderRadius: BorderRadius.only(
-                                    topRight: Radius.circular(6),
-                                    bottomRight: Radius.circular(6),
+                                  borderRadius: const BorderRadius.only(
+                                    topLeft: Radius.circular(6),
+                                    bottomLeft: Radius.circular(6),
                                   ),
-                                  borderSide: BorderSide(
+                                ),
+                                child: Text(
+                                  '@',
+                                  style: AtNavTheme.monoData(
+                                    size: 18 * s,
                                     color: AtNavTheme.accentOrange,
-                                    width: 1,
-                                  ),
-                                ),
-                                errorBorder: const OutlineInputBorder(
-                                  borderRadius: BorderRadius.only(
-                                    topRight: Radius.circular(6),
-                                    bottomRight: Radius.circular(6),
-                                  ),
-                                  borderSide: BorderSide(
-                                    color: AtNavTheme.accentOrange,
-                                    width: 2,
-                                  ),
-                                ),
-                                focusedErrorBorder: const OutlineInputBorder(
-                                  borderRadius: BorderRadius.only(
-                                    topRight: Radius.circular(6),
-                                    bottomRight: Radius.circular(6),
-                                  ),
-                                  borderSide: BorderSide(
-                                    color: AtNavTheme.accentOrange,
-                                    width: 2,
+                                    weight: FontWeight.w700,
                                   ),
                                 ),
                               ),
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                    const SizedBox(height: 28),
-
-                    // .atKeys file picker section label
-                    Text(
-                      AtNavTheme.asciiFrame('KEY FILE'),
-                      style: AtNavTheme.monoLabel(
-                        size: 10,
-                        color: AtNavTheme.accentOrange,
-                      ),
-                    ),
-                    const SizedBox(height: 10),
-
-                    // File picker drop zone
-                    InkWell(
-                      onTap: _isLoading ? null : _pickAtKeysFile,
-                      child: Container(
-                        padding: const EdgeInsets.symmetric(
-                          vertical: 28,
-                          horizontal: 20,
-                        ),
-                        decoration: BoxDecoration(
-                          color: AtNavTheme.bgPrimary,
-                          border: Border.all(
-                            color: _selectedFilePath != null
-                                ? AtNavTheme.terminalGreen
-                                : AtNavTheme.borderColor,
-                            width: 1,
-                          ),
-                        ),
-                        child: Column(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            Icon(
-                              _selectedFilePath != null
-                                  ? Icons.check_box_outlined
-                                  : Icons.upload_file_outlined,
-                              color: _selectedFilePath != null
-                                  ? AtNavTheme.terminalGreen
-                                  : AtNavTheme.fgTertiary,
-                              size: 32,
-                            ),
-                            const SizedBox(height: 10),
-                            Text(
-                              _selectedFileName != null
-                                  ? _selectedFileName!.toUpperCase()
-                                  : 'SELECT .ATKEYS FILE',
-                              style: AtNavTheme.monoData(
-                                size: 12,
-                                color: _selectedFilePath != null
-                                    ? AtNavTheme.terminalGreen
-                                    : AtNavTheme.fgSecondary,
-                              ),
-                              textAlign: TextAlign.center,
-                            ),
-                            const SizedBox(height: 4),
-                            Text(
-                              'CLICK TO BROWSE FILE SYSTEM',
-                              style: AtNavTheme.monoLabel(
-                                size: 9,
-                                color: AtNavTheme.fgTertiary,
-                              ),
-                              textAlign: TextAlign.center,
-                            ),
-                          ],
-                        ),
-                      ),
-                    ),
-                    const SizedBox(height: 24),
-
-                    // Error display
-                    if (_errorMessage != null) ...[
-                      Container(
-                        padding: const EdgeInsets.all(12),
-                        decoration: BoxDecoration(
-                          color: AtNavTheme.accentOrange.withValues(alpha: 0.1),
-                          border: Border.all(
-                            color: AtNavTheme.accentOrange,
-                            width: 1,
-                          ),
-                        ),
-                        child: Row(
-                          children: [
-                            Text(
-                              '!!! ',
-                              style: AtNavTheme.monoData(
-                                size: 12,
-                                color: AtNavTheme.accentOrange,
-                                weight: FontWeight.w700,
-                              ),
-                            ),
-                            Expanded(
-                              child: Text(
-                                _errorMessage!,
-                                style: AtNavTheme.monoData(
-                                  size: 10,
-                                  color: AtNavTheme.accentOrange,
-                                ),
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                      const SizedBox(height: 16),
-                    ],
-
-                    // Authenticate button — full width
-                    SizedBox(
-                      height: 52,
-                      child: ElevatedButton(
-                        onPressed: _isLoading ? null : _authenticate,
-                        style: AtNavTheme.primaryButton(isDestructive: true).copyWith(
-                          backgroundColor: WidgetStateProperty.resolveWith((states) {
-                            if (states.contains(WidgetState.disabled)) {
-                              return AtNavTheme.bgElevated;
-                            }
-                            if (states.contains(WidgetState.pressed)) {
-                              return const Color(0xFFE04900);
-                            }
-                            return AtNavTheme.accentOrange;
-                          }),
-                          foregroundColor: WidgetStateProperty.all(Colors.white),
-                        ),
-                        child: _isLoading
-                            ? Row(
-                                mainAxisAlignment: MainAxisAlignment.center,
-                                children: [
-                                  const SizedBox(
-                                    width: 14,
-                                    height: 14,
-                                    child: CircularProgressIndicator(
-                                      strokeWidth: 2,
-                                      color: Colors.white,
+                              // Text input — takes remaining width
+                              Expanded(
+                                child: TextField(
+                                  controller: _atSignController,
+                                  style: AtNavTheme.monoData(size: 14 * s),
+                                  enabled: !_isLoading,
+                                  decoration: InputDecoration(
+                                    hintText: 'your_atsign',
+                                    hintStyle: AtNavTheme.monoData(
+                                      size: 13 * s,
+                                      color: AtNavTheme.fgTertiary,
+                                    ),
+                                    filled: true,
+                                    fillColor: AtNavTheme.bgPrimary,
+                                    contentPadding: EdgeInsets.symmetric(
+                                      horizontal: 12 * s,
+                                      vertical: 0,
+                                    ),
+                                    enabledBorder: const OutlineInputBorder(
+                                      borderRadius: BorderRadius.only(
+                                        topRight: Radius.circular(6),
+                                        bottomRight: Radius.circular(6),
+                                      ),
+                                      borderSide: BorderSide(
+                                        color: AtNavTheme.borderColor,
+                                        width: 1,
+                                      ),
+                                    ),
+                                    focusedBorder: const OutlineInputBorder(
+                                      borderRadius: BorderRadius.only(
+                                        topRight: Radius.circular(6),
+                                        bottomRight: Radius.circular(6),
+                                      ),
+                                      borderSide: BorderSide(
+                                        color: AtNavTheme.accentOrange,
+                                        width: 1,
+                                      ),
+                                    ),
+                                    errorBorder: const OutlineInputBorder(
+                                      borderRadius: BorderRadius.only(
+                                        topRight: Radius.circular(6),
+                                        bottomRight: Radius.circular(6),
+                                      ),
+                                      borderSide: BorderSide(
+                                        color: AtNavTheme.accentOrange,
+                                        width: 2,
+                                      ),
+                                    ),
+                                    focusedErrorBorder: const OutlineInputBorder(
+                                      borderRadius: BorderRadius.only(
+                                        topRight: Radius.circular(6),
+                                        bottomRight: Radius.circular(6),
+                                      ),
+                                      borderSide: BorderSide(
+                                        color: AtNavTheme.accentOrange,
+                                        width: 2,
+                                      ),
                                     ),
                                   ),
-                                  const SizedBox(width: 12),
-                                  Text(
-                                    'AUTHENTICATING...',
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                        SizedBox(height: 24 * s),
+
+                        // Key file section label
+                        Text(
+                          AtNavTheme.asciiFrame('KEY FILE'),
+                          style: AtNavTheme.monoLabel(
+                            size: 9.5 * s,
+                            color: AtNavTheme.accentOrange,
+                          ),
+                        ),
+                        SizedBox(height: 8 * s),
+
+                        // File picker drop zone
+                        InkWell(
+                          onTap: _isLoading ? null : _pickAtKeysFile,
+                          child: Container(
+                            padding: EdgeInsets.symmetric(
+                              vertical: 24 * s,
+                              horizontal: 16 * s,
+                            ),
+                            decoration: BoxDecoration(
+                              color: AtNavTheme.bgPrimary,
+                              border: Border.all(
+                                color: _selectedFilePath != null
+                                    ? AtNavTheme.terminalGreen
+                                    : AtNavTheme.borderColor,
+                                width: 1,
+                              ),
+                            ),
+                            child: Column(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                Icon(
+                                  _selectedFilePath != null
+                                      ? Icons.check_box_outlined
+                                      : Icons.upload_file_outlined,
+                                  color: _selectedFilePath != null
+                                      ? AtNavTheme.terminalGreen
+                                      : AtNavTheme.fgTertiary,
+                                  size: 28 * s,
+                                ),
+                                SizedBox(height: 8 * s),
+                                Text(
+                                  _selectedFileName != null
+                                      ? _selectedFileName!.toUpperCase()
+                                      : 'SELECT .ATKEYS FILE',
+                                  style: AtNavTheme.monoData(
+                                    size: 11 * s,
+                                    color: _selectedFilePath != null
+                                        ? AtNavTheme.terminalGreen
+                                        : AtNavTheme.fgSecondary,
+                                  ),
+                                  textAlign: TextAlign.center,
+                                ),
+                                SizedBox(height: 4 * s),
+                                Text(
+                                  'CLICK TO BROWSE FILE SYSTEM',
+                                  style: AtNavTheme.monoLabel(
+                                    size: 8.5 * s,
+                                    color: AtNavTheme.fgTertiary,
+                                  ),
+                                  textAlign: TextAlign.center,
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
+                        SizedBox(height: 20 * s),
+
+                        // Error display
+                        if (_errorMessage != null) ...[
+                          Container(
+                            padding: EdgeInsets.all(10 * s),
+                            decoration: BoxDecoration(
+                              color:
+                                  AtNavTheme.accentOrange.withValues(alpha: 0.1),
+                              border: Border.all(
+                                color: AtNavTheme.accentOrange,
+                                width: 1,
+                              ),
+                            ),
+                            child: Row(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  '!!! ',
+                                  style: AtNavTheme.monoData(
+                                    size: 11 * s,
+                                    color: AtNavTheme.accentOrange,
+                                    weight: FontWeight.w700,
+                                  ),
+                                ),
+                                Expanded(
+                                  child: Text(
+                                    _errorMessage!,
                                     style: AtNavTheme.monoData(
-                                      size: 12,
+                                      size: 10 * s,
+                                      color: AtNavTheme.accentOrange,
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                          SizedBox(height: 14 * s),
+                        ],
+
+                        // Authenticate button — full width
+                        SizedBox(
+                          height: ctrlH,
+                          child: ElevatedButton(
+                            onPressed: _isLoading ? null : _authenticate,
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: AtNavTheme.accentOrange,
+                              foregroundColor: Colors.white,
+                              disabledBackgroundColor: AtNavTheme.bgElevated,
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(6),
+                              ),
+                              elevation: 0,
+                            ),
+                            child: _isLoading
+                                ? Row(
+                                    mainAxisAlignment: MainAxisAlignment.center,
+                                    children: [
+                                      SizedBox(
+                                        width: 14 * s,
+                                        height: 14 * s,
+                                        child: const CircularProgressIndicator(
+                                          strokeWidth: 2,
+                                          color: Colors.white,
+                                        ),
+                                      ),
+                                      SizedBox(width: 10 * s),
+                                      Text(
+                                        'AUTHENTICATING...',
+                                        style: AtNavTheme.monoData(
+                                          size: 12 * s,
+                                          weight: FontWeight.w700,
+                                          color: Colors.white,
+                                        ),
+                                      ),
+                                    ],
+                                  )
+                                : Text(
+                                    '>>> AUTHENTICATE',
+                                    style: AtNavTheme.monoData(
+                                      size: 12.5 * s,
                                       weight: FontWeight.w700,
                                       color: Colors.white,
                                     ),
                                   ),
-                                ],
-                              )
-                            : Text(
-                                '>>> AUTHENTICATE',
-                                style: AtNavTheme.monoData(
-                                  size: 13,
-                                  weight: FontWeight.w700,
-                                  color: Colors.white,
-                                ),
-                              ),
-                      ),
+                          ),
+                        ),
+                      ],
                     ),
-                  ],
+                  ),
                 ),
               ),
             ),
 
-            // ── Footer ──────────────────────────────────────────────────
+            // ── Footer ────────────────────────────────────────────────────
             Container(
-              padding: const EdgeInsets.symmetric(
-                horizontal: 24,
-                vertical: 12,
-              ),
+              padding:
+                  EdgeInsets.symmetric(horizontal: hp, vertical: 10 * s),
               decoration: const BoxDecoration(
                 border: Border(
                   top: BorderSide(color: AtNavTheme.borderColor, width: 1),
@@ -475,17 +480,19 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  Text(
-                    'ATSIGN PROTOCOL /// TLS ENCRYPTED',
-                    style: AtNavTheme.monoLabel(
-                      size: 8,
-                      color: AtNavTheme.fgTertiary,
+                  Flexible(
+                    child: Text(
+                      'ATSIGN PROTOCOL /// TLS ENCRYPTED',
+                      style: AtNavTheme.monoLabel(
+                        size: 7.5 * s,
+                        color: AtNavTheme.fgTertiary,
+                      ),
                     ),
                   ),
                   Text(
                     'REV 1.0 /// AtNav',
                     style: AtNavTheme.monoLabel(
-                      size: 8,
+                      size: 7.5 * s,
                       color: AtNavTheme.fgTertiary,
                     ),
                   ),
