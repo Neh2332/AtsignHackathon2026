@@ -162,7 +162,7 @@ class _PeerPanelState extends State<PeerPanel> {
               LocalDb.instance.updateConsentStatus(peer, 'none');
               LocalDb.instance.deleteCoordinatesForPeer(peer);
             },
-            child: Text('[REVOKE]', style: AtNavTheme.monoData(size: 10, color: AtNavTheme.accentOrange)),
+            child: const Icon(Icons.close, size: 20, color: AtNavTheme.accentOrange),
           ),
         ],
       );
