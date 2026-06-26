@@ -51,3 +51,6 @@ android/app/src/main/assets/
 atKeys/
 *.keys
 secrets.json
+
+# Graphify
+graphify-out/
