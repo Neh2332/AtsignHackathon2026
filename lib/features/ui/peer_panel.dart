@@ -465,14 +465,30 @@ class _PeerPanelState extends State<PeerPanel> {
                               if (status == 'approved')
                                 InkWell(
                                   onTap: () => widget.onToggleVisibility(peer),
-                                  child: Icon(
-                                    widget.hiddenPeers.contains(peer)
-                                        ? Icons.visibility_off
-                                        : Icons.visibility,
-                                    color: widget.hiddenPeers.contains(peer)
-                                        ? AtNavTheme.fgTertiary
-                                        : AtNavTheme.terminalGreen,
-                                    size: 16,
+                                  child: Row(
+                                    children: [
+                                      Text(
+                                        widget.hiddenPeers.contains(peer)
+                                            ? 'HIDE ON MAP'
+                                            : 'SHOW ON MAP',
+                                        style: AtNavTheme.monoLabel(
+                                          size: 8,
+                                          color: widget.hiddenPeers.contains(peer)
+                                              ? AtNavTheme.fgTertiary
+                                              : AtNavTheme.terminalGreen,
+                                        ),
+                                      ),
+                                      const SizedBox(width: 4),
+                                      Icon(
+                                        widget.hiddenPeers.contains(peer)
+                                            ? Icons.visibility_off
+                                            : Icons.visibility,
+                                        color: widget.hiddenPeers.contains(peer)
+                                            ? AtNavTheme.fgTertiary
+                                            : AtNavTheme.terminalGreen,
+                                        size: 16,
+                                      ),
+                                    ],
                                   ),
                                 ),
                             ],
