@@ -14,14 +14,21 @@ import 'peer_panel.dart';
 import 'telemetry_ticker.dart';
 import 'theme.dart';
 
-/// Main map screen with mobile-first full-screen layout.
+/// Main map screen with adaptive layout.
 ///
-/// Layout:
-/// - Full-screen flutter_map with CartoDB light tiles
-/// - Floating AppBar with status indicators
+/// Layout adapts based on [AppConstants.desktopBreakpoint] (800px):
+///
+/// **Desktop (≥ 800px)**:
+/// - Top status bar with system info
+/// - Horizontal split-pane: 30% PeerPanel sidebar | 70% FlutterMap
+/// - Bottom real-time telemetry ticker
+/// - Floating map overlay (peer coords, top-right)
+///
+/// **Mobile (< 800px)**:
+/// - AppBar with connection status
+/// - Full-screen FlutterMap
 /// - DraggableScrollableSheet for peer management (slides up from bottom)
-/// - Animated peer pins with pulsing halos and name tags
-/// - Polyline trails for each tracked peer
+/// - Telemetry ticker strip above the sheet
 class MapScreen extends StatefulWidget {
   const MapScreen({super.key});
 
@@ -41,6 +48,14 @@ class _MapScreenState extends State<MapScreen> with TickerProviderStateMixin {
   StreamSubscription<Map<String, TelemetryPoint>>? _positionSubscription;
   StreamSubscription<TelemetryPoint>? _pointSubscription;
 
+  // Pulsing animation for active pins
+  late final AnimationController _pulseController;
+  late final Animation<double> _pulseAnimation;
+
+  // Sheet controller — only used on mobile layout
+  final DraggableScrollableController _sheetController =
+      DraggableScrollableController();
+
   void _togglePeerVisibility(String atSign) {
     setState(() {
       if (_hiddenPeers.contains(atSign)) {
@@ -50,14 +65,6 @@ class _MapScreenState extends State<MapScreen> with TickerProviderStateMixin {
       }
     });
   }
-
-  // Pulsing animation for active pins
-  late final AnimationController _pulseController;
-  late final Animation<double> _pulseAnimation;
-
-  // Sheet controller to programmatically expand/collapse the peer panel
-  final DraggableScrollableController _sheetController =
-      DraggableScrollableController();
 
   @override
   void initState() {
@@ -147,24 +154,140 @@ class _MapScreenState extends State<MapScreen> with TickerProviderStateMixin {
     }
   }
 
+  // ── Root Build ─────────────────────────────────────────────────────────────
+
   @override
   Widget build(BuildContext context) {
+    final double width = MediaQuery.sizeOf(context).width;
+    final bool isDesktop = width >= AppConstants.desktopBreakpoint;
+
+    return isDesktop ? _buildDesktopLayout() : _buildMobileLayout();
+  }
+
+  // ── Desktop Layout ─────────────────────────────────────────────────────────
+
+  /// Desktop layout: top bar + horizontal split-pane + bottom ticker.
+  Widget _buildDesktopLayout() {
     return Scaffold(
       backgroundColor: AtNavTheme.bgPrimary,
-      // ── Mobile AppBar ──────────────────────────────────────────────────────
+      body: Column(
+        children: [
+          // ── Top Status Bar ───────────────────────────────────────────
+          _buildTopBar(),
+
+          // ── Main Content (Split Pane) ────────────────────────────────
+          Expanded(
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                // Left Panel: Peer Management (30%)
+                SizedBox(
+                  width: MediaQuery.sizeOf(context).width *
+                      AppConstants.sidebarWidthRatio,
+                  child: PeerPanel(
+                    streamer: _streamer,
+                    listener: _listener,
+                    latestPositions: _latestPositions,
+                    hiddenPeers: _hiddenPeers,
+                    onToggleVisibility: _togglePeerVisibility,
+                  ),
+                ),
+
+                // Vertical Divider
+                Container(width: 1, color: AtNavTheme.borderColor),
+
+                // Right Panel: Map (70%)
+                Expanded(
+                  child: Stack(
+                    children: [
+                      _buildMap(),
+                      _buildMapOverlay(),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
+
+          // ── Bottom Ticker ────────────────────────────────────────────
+          TelemetryTicker(listener: _listener),
+        ],
+      ),
+    );
+  }
+
+  /// Top status bar shown on desktop only.
+  Widget _buildTopBar() {
+    final isOnline = AtService.instance.isAuthenticated;
+    return Container(
+      height: 32,
+      padding: const EdgeInsets.symmetric(horizontal: 16),
+      decoration: const BoxDecoration(
+        color: AtNavTheme.bgElevated,
+        border: Border(
+          bottom: BorderSide(color: AtNavTheme.borderColor, width: 1),
+        ),
+      ),
+      child: Row(
+        children: [
+          Text(
+            'AtNav',
+            style: AtNavTheme.macroHeader(13),
+          ),
+          const SizedBox(width: 12),
+          Container(
+            width: 6,
+            height: 6,
+            decoration: BoxDecoration(
+              color: isOnline
+                  ? AtNavTheme.terminalGreen
+                  : AtNavTheme.accentOrange,
+              shape: BoxShape.circle,
+            ),
+          ),
+          const SizedBox(width: 6),
+          Text(
+            isOnline ? 'ONLINE' : 'OFFLINE',
+            style: AtNavTheme.monoData(
+              size: 9,
+              color:
+                  isOnline ? AtNavTheme.terminalGreen : AtNavTheme.accentOrange,
+            ),
+          ),
+          const Spacer(),
+          Text(
+            'PEERS: ${_latestPositions.length}',
+            style: AtNavTheme.monoData(size: 9, color: AtNavTheme.fgSecondary),
+          ),
+          const SizedBox(width: 16),
+          Text(
+            'E2E: AES-256',
+            style: AtNavTheme.monoData(size: 9, color: AtNavTheme.fgTertiary),
+          ),
+        ],
+      ),
+    );
+  }
+
+  // ── Mobile Layout ──────────────────────────────────────────────────────────
+
+  /// Mobile layout: AppBar + full-screen map + draggable bottom sheet.
+  Widget _buildMobileLayout() {
+    return Scaffold(
+      backgroundColor: AtNavTheme.bgPrimary,
       appBar: PreferredSize(
         preferredSize: const Size.fromHeight(52),
         child: _buildMobileAppBar(),
       ),
       body: Stack(
         children: [
-          // ── Full-screen Map ──────────────────────────────────────────────
+          // ── Full-screen Map ──────────────────────────────────────────
           _buildMap(),
 
-          // ── Map Overlay (Peer coords, top-right) ────────────────────────
+          // ── Map Overlay (Peer coords, top-right) ────────────────────
           _buildMapOverlay(),
 
-          // ── Real-time telemetry ticker (bottom strip) ────────────────────
+          // ── Real-time telemetry ticker (bottom strip) ────────────────
           Positioned(
             left: 0,
             right: 0,
@@ -172,7 +295,7 @@ class _MapScreenState extends State<MapScreen> with TickerProviderStateMixin {
             child: TelemetryTicker(listener: _listener),
           ),
 
-          // ── Peer Management Bottom Sheet ─────────────────────────────────
+          // ── Peer Management Bottom Sheet ─────────────────────────────
           DraggableScrollableSheet(
             controller: _sheetController,
             initialChildSize: 0.12,
@@ -248,6 +371,55 @@ class _MapScreenState extends State<MapScreen> with TickerProviderStateMixin {
       ),
     );
   }
+
+  /// Mobile peer sheet that slides up from the bottom.
+  Widget _buildPeerSheet(ScrollController scrollController) {
+    return Container(
+      decoration: BoxDecoration(
+        color: AtNavTheme.bgPrimary,
+        border: const Border(
+          top: BorderSide(color: AtNavTheme.accentOrange, width: 2),
+        ),
+        borderRadius: const BorderRadius.vertical(top: Radius.circular(12)),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.08),
+            blurRadius: 12,
+            offset: const Offset(0, -4),
+          ),
+        ],
+      ),
+      child: Column(
+        children: [
+          // Drag handle
+          Padding(
+            padding: const EdgeInsets.symmetric(vertical: 10),
+            child: Container(
+              width: 40,
+              height: 4,
+              decoration: BoxDecoration(
+                color: AtNavTheme.borderColor,
+                borderRadius: BorderRadius.circular(2),
+              ),
+            ),
+          ),
+          // Peer panel scrolls inside the sheet
+          Expanded(
+            child: PeerPanel(
+              streamer: _streamer,
+              listener: _listener,
+              latestPositions: _latestPositions,
+              hiddenPeers: _hiddenPeers,
+              onToggleVisibility: _togglePeerVisibility,
+              scrollController: scrollController,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  // ── Shared Widgets ─────────────────────────────────────────────────────────
 
   /// Builds the flutter_map widget with CartoDB light tiles.
   Widget _buildMap() {
@@ -493,7 +665,7 @@ class _MapScreenState extends State<MapScreen> with TickerProviderStateMixin {
     return markers;
   }
 
-  /// Map overlay with active peer coordinate readouts.
+  /// Map overlay with active peer coordinate readouts (top-right corner).
   Widget _buildMapOverlay() {
     if (_latestPositions.isEmpty) return const SizedBox.shrink();
 
@@ -547,53 +719,6 @@ class _MapScreenState extends State<MapScreen> with TickerProviderStateMixin {
             }),
           ],
         ),
-      ),
-    );
-  }
-
-  /// Peer management bottom sheet — replaces the desktop sidebar.
-  Widget _buildPeerSheet(ScrollController scrollController) {
-    return Container(
-      decoration: BoxDecoration(
-        color: AtNavTheme.bgPrimary,
-        border: const Border(
-          top: BorderSide(color: AtNavTheme.accentOrange, width: 2),
-        ),
-        borderRadius: const BorderRadius.vertical(top: Radius.circular(12)),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.08),
-            blurRadius: 12,
-            offset: const Offset(0, -4),
-          ),
-        ],
-      ),
-      child: Column(
-        children: [
-          // Drag handle
-          Padding(
-            padding: const EdgeInsets.symmetric(vertical: 10),
-            child: Container(
-              width: 40,
-              height: 4,
-              decoration: BoxDecoration(
-                color: AtNavTheme.borderColor,
-                borderRadius: BorderRadius.circular(2),
-              ),
-            ),
-          ),
-          // Peer panel scrolls inside the sheet
-          Expanded(
-            child: PeerPanel(
-              streamer: _streamer,
-              listener: _listener,
-              latestPositions: _latestPositions,
-              hiddenPeers: _hiddenPeers,
-              onToggleVisibility: _togglePeerVisibility,
-              scrollController: scrollController,
-            ),
-          ),
-        ],
       ),
     );
   }

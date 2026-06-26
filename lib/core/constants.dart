@@ -51,6 +51,24 @@ class AppConstants {
   /// Default map zoom level.
   static const double defaultMapZoom = 13.0;
 
+  /// Minimum desktop window width.
+  static const double minWindowWidth = 360;
+
+  /// Minimum desktop window height.
+  static const double minWindowHeight = 500;
+
+  /// Initial desktop window width.
+  static const double initialWindowWidth = 1440;
+
+  /// Initial desktop window height.
+  static const double initialWindowHeight = 900;
+
+  /// Left sidebar width ratio (peer panel) — desktop only.
+  static const double sidebarWidthRatio = 0.30;
+
+  /// Responsive breakpoint — widths at or above this value use the desktop layout.
+  static const double desktopBreakpoint = 800.0;
+
   // ── Coordinate Display ───────────────────────────────────────────────────
   /// Decimal precision for displaying latitude/longitude.
   static const int coordinatePrecision = 6;
