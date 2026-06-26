@@ -24,12 +24,16 @@ import 'theme.dart';
 /// - Floating map overlay (peer coords, top-right)
 ///
 /// **Mobile (< 800px)**:
-/// - AppBar with connection status
+/// - AppBar with connection status and logout button
 /// - Full-screen FlutterMap
 /// - DraggableScrollableSheet for peer management (slides up from bottom)
 /// - Telemetry ticker strip above the sheet
 class MapScreen extends StatefulWidget {
-  const MapScreen({super.key});
+  /// Called when the user signs out so the root widget can navigate
+  /// back to the onboarding screen.
+  final VoidCallback? onSignOut;
+
+  const MapScreen({super.key, this.onSignOut});
 
   @override
   State<MapScreen> createState() => _MapScreenState();
@@ -310,7 +314,7 @@ class _MapScreenState extends State<MapScreen> with TickerProviderStateMixin {
     );
   }
 
-  /// Mobile AppBar with AtNav branding and connection status.
+  /// Mobile AppBar with AtNav branding, connection status, and logout.
   Widget _buildMobileAppBar() {
     final isOnline = AtService.instance.isAuthenticated;
     return AppBar(
@@ -344,7 +348,7 @@ class _MapScreenState extends State<MapScreen> with TickerProviderStateMixin {
       ),
       actions: [
         Padding(
-          padding: const EdgeInsets.only(right: 16),
+          padding: const EdgeInsets.only(right: 4),
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             crossAxisAlignment: CrossAxisAlignment.end,
@@ -368,6 +372,67 @@ class _MapScreenState extends State<MapScreen> with TickerProviderStateMixin {
             ],
           ),
         ),
+        // ── Logout button ───────────────────────────────────────────────
+        IconButton(
+          tooltip: 'Log Out',
+          icon: const Icon(
+            Icons.logout,
+            color: AtNavTheme.accentOrange,
+            size: 22,
+          ),
+          onPressed: () async {
+            final confirmed = await showDialog<bool>(
+              context: context,
+              builder: (ctx) => AlertDialog(
+                backgroundColor: AtNavTheme.bgPrimary,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(8),
+                  side: const BorderSide(color: AtNavTheme.borderColor),
+                ),
+                title: Text(
+                  'LOG OUT',
+                  style: AtNavTheme.macroHeader(16),
+                ),
+                content: Text(
+                  'This will clear your session and return to the login screen.',
+                  style: AtNavTheme.monoData(size: 13, color: AtNavTheme.fgSecondary),
+                ),
+                actions: [
+                  TextButton(
+                    onPressed: () => Navigator.of(ctx).pop(false),
+                    child: Text(
+                      'CANCEL',
+                      style: AtNavTheme.monoData(size: 12, color: AtNavTheme.fgSecondary),
+                    ),
+                  ),
+                  ElevatedButton(
+                    onPressed: () => Navigator.of(ctx).pop(true),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: AtNavTheme.accentOrange,
+                      foregroundColor: Colors.white,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(6),
+                      ),
+                    ),
+                    child: Text(
+                      'LOG OUT',
+                      style: AtNavTheme.monoData(
+                        size: 12,
+                        weight: FontWeight.w700,
+                        color: Colors.white,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            );
+            if (confirmed == true && mounted) {
+              await AtService.instance.signOut();
+              widget.onSignOut?.call();
+            }
+          },
+        ),
+        const SizedBox(width: 8),
       ],
       bottom: PreferredSize(
         preferredSize: const Size.fromHeight(1),
@@ -754,9 +819,11 @@ class _MapScreenState extends State<MapScreen> with TickerProviderStateMixin {
       content = SafeArea(child: content);
     }
 
+    // On both mobile and desktop the zoom controls sit at the very top-right,
+    // directly underneath the navigation header (AppBar/TopBar).
     return Positioned(
       right: 12,
-      top: 100, 
+      top: 12,
       child: content,
     );
   }

@@ -36,7 +36,7 @@ class AtNavTheme {
 
   /// Atsign Orange — the ONLY accent color.
   /// Used for: active pins, alerts, section dividers, critical indicators.
-  static const Color accentOrange = Color(0xFFFF5A00);
+  static const Color accentOrange = Color(0xFFFD582C);
 
   /// Terminal Green — used for ONE element only: live connection status.
   static const Color terminalGreen = Color(0xFF34C759);

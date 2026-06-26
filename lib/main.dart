@@ -98,6 +98,12 @@ class _AtNavAppState extends State<AtNavApp> {
     });
   }
 
+  void _onSignOut() {
+    setState(() {
+      _isAuthenticated = false;
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
@@ -105,7 +111,7 @@ class _AtNavAppState extends State<AtNavApp> {
       debugShowCheckedModeBanner: false,
       theme: AtNavTheme.buildTheme(),
       home: _isAuthenticated
-          ? const MapScreen()
+          ? MapScreen(onSignOut: _onSignOut)
           : OnboardingScreen(onAuthenticated: _onAuthenticated),
     );
   }

@@ -80,6 +80,7 @@ class _PeerPanelState extends State<PeerPanel> {
     if (status == 'pending_inbound') {
       return Row(
         children: [
+          // ── REJECT: white background, light orange border, dark text ──
           Expanded(
             child: SizedBox(
               height: 48,
@@ -88,12 +89,34 @@ class _PeerPanelState extends State<PeerPanel> {
                   AtService.instance.revokeConsent(peer);
                   LocalDb.instance.updateConsentStatus(peer, 'none');
                 },
-                style: AtNavTheme.primaryButton(isDestructive: true),
-                child: Text('REJECT', style: AtNavTheme.monoData(size: 10)),
+                style: ButtonStyle(
+                  backgroundColor: WidgetStateProperty.resolveWith((states) {
+                    if (states.contains(WidgetState.disabled)) return AtNavTheme.bgElevated;
+                    if (states.contains(WidgetState.pressed)) return AtNavTheme.bgElevated;
+                    return Colors.white;
+                  }),
+                  foregroundColor: WidgetStateProperty.all(AtNavTheme.fgPrimary),
+                  overlayColor: WidgetStateProperty.all(AtNavTheme.accentOrange.withValues(alpha: 0.08)),
+                  padding: WidgetStateProperty.all(
+                    const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                  ),
+                  shape: WidgetStateProperty.all(
+                    RoundedRectangleBorder(borderRadius: BorderRadius.circular(6)),
+                  ),
+                  side: WidgetStateProperty.all(
+                    const BorderSide(color: AtNavTheme.accentOrange, width: 1),
+                  ),
+                  elevation: WidgetStateProperty.all(0),
+                  textStyle: WidgetStateProperty.all(
+                    AtNavTheme.monoData(size: 11, weight: FontWeight.w600),
+                  ),
+                ),
+                child: Text('REJECT', style: AtNavTheme.monoData(size: 11, weight: FontWeight.w600)),
               ),
             ),
           ),
           const SizedBox(width: 8),
+          // ── ACCEPT: solid orange (#FD582C), white text ─────────────────
           Expanded(
             child: SizedBox(
               height: 48,
@@ -102,15 +125,29 @@ class _PeerPanelState extends State<PeerPanel> {
                   AtService.instance.acceptConsentRequest(peer);
                   LocalDb.instance.updateConsentStatus(peer, 'approved');
                 },
-                style: AtNavTheme.primaryButton().copyWith(
+                style: ButtonStyle(
                   backgroundColor: WidgetStateProperty.resolveWith((states) {
                     if (states.contains(WidgetState.disabled)) return AtNavTheme.bgElevated;
                     if (states.contains(WidgetState.pressed)) return const Color(0xFFE04900);
                     return AtNavTheme.accentOrange;
                   }),
                   foregroundColor: WidgetStateProperty.all(Colors.white),
+                  overlayColor: WidgetStateProperty.all(Colors.white.withValues(alpha: 0.12)),
+                  padding: WidgetStateProperty.all(
+                    const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                  ),
+                  shape: WidgetStateProperty.all(
+                    RoundedRectangleBorder(borderRadius: BorderRadius.circular(6)),
+                  ),
+                  side: WidgetStateProperty.all(
+                    const BorderSide(color: AtNavTheme.accentOrange, width: 1),
+                  ),
+                  elevation: WidgetStateProperty.all(0),
+                  textStyle: WidgetStateProperty.all(
+                    AtNavTheme.monoData(size: 11, weight: FontWeight.w600),
+                  ),
                 ),
-                child: Text('ACCEPT', style: AtNavTheme.monoData(size: 10)),
+                child: Text('ACCEPT', style: AtNavTheme.monoData(size: 11, weight: FontWeight.w600, color: Colors.white)),
               ),
             ),
           ),
@@ -514,10 +551,11 @@ class _PeerPanelState extends State<PeerPanel> {
                               label: 'ALIAS',
                               hint: 'Custom Name',
                             ).copyWith(
-                              contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                              isDense: true,
+                              contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                              isDense: false,
                             ),
-                            style: AtNavTheme.monoData(size: 10),
+                            // Alias text is deliberately larger for quick scannability
+                            style: AtNavTheme.monoData(size: 15, weight: FontWeight.w600),
                             onFieldSubmitted: (val) {
                               LocalDb.instance.updatePeerDisplayName(peer, val);
                             },
